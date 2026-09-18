@@ -73,3 +73,30 @@ The app also requests `ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION` at runti
 - Replace `MockData` with calls to the ASP.NET Core REST API once endpoints are live — this includes
   geocoding a job's typed address into `latitude`/`longitude` when an employer posts it.
 - Hook Room for offline caching per the original Part 1 design.
+
+
+
+## REST API Endpoints
+
+GET /api/jobs — Fetches the full list of job postings to populate the student swipe feed and map views.
+
+POST /api/jobs — Creates a new job posting for hiring companies.
+
+DELETE /api/jobs/{id} — Deletes an existing job posting by its unique ID.
+
+GET /api/students — Fetches student profiles to populate the company candidate swipe feed.
+
+POST /api/students — Registers a new student profile during initial onboarding.
+
+PUT /api/students/{id} — Updates an existing student's profile information, skills, and blurb.
+
+POST /api/companies — Registers a new company profile.
+
+PUT /api/companies/{id} — Updates company details, location, and industry information.
+
+POST /api/swipes — Records a swipe action between users/jobs and determines if a mutual match occurred.
+
+POST /api/location/geocode — Converts a physical address string into geographic coordinates (latitude and longitude) for distance calculations and map markers.
+
+## How to run the API and mobile app
+Open the SwipeHire.Api solution in Visual Studio 2022, press F5 to start the web service locally on http://localhost:5000 (or verify Swagger UI opens), then open the SwipeHire project in Android Studio and run the app on an Android Emulator—the app communicates directly with your C# backend via Retrofit using the local loopback address 10.0.2.2:5000 (you can verify active traffic by hitting breakpoints set inside your C# controllers).
