@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.swipehire.app.data.repository.AppRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -17,6 +18,7 @@ data class UserLocation(val latitude: Double, val longitude: Double)
 
 class NearbyJobsViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val repository = AppRepository()
     private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(application)
 
     private val _userLocation = MutableStateFlow<UserLocation?>(null)
@@ -42,6 +44,17 @@ class NearbyJobsViewModel(application: Application) : AndroidViewModel(applicati
                 _userLocation.value = null
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    /** Triggers a POST call to the C# Web API via Retrofit to geocode an address. */
+    fun geocodeAddress(address: String) {
+        viewModelScope.launch {
+            try {
+                repository.geocodeAddress(address)
+            } catch (e: Exception) {
+                // Ignore or log geocoding errors
             }
         }
     }

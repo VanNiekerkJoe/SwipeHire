@@ -68,7 +68,6 @@ import androidx.compose.ui.unit.dp
 import com.swipehire.app.data.AccountType
 import androidx.compose.foundation.layout.height
 import com.swipehire.app.data.JobPosting
-import androidx.compose.runtime.getValue
 import com.swipehire.app.data.MockData
 import com.swipehire.app.data.RemoteType
 import com.swipehire.app.data.StudentProfile
@@ -83,6 +82,10 @@ import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.VioletDeep
 import com.swipehire.app.ui.theme.decorativeRings
 import com.swipehire.app.ui.theme.glow
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.swipehire.app.viewmodel.DiscoverViewModel
 
 private enum class BrowseMode { SWIPE, LIST }
 
@@ -90,12 +93,21 @@ private enum class BrowseMode { SWIPE, LIST }
 fun DiscoverScreen(
     accountType: AccountType,
     onOpenNearbyJobs: () -> Unit = {},
-    onViewJobLocation: (String) -> Unit = {}
+    onViewJobLocation: (String) -> Unit = {},
+    viewModel: DiscoverViewModel = viewModel()
 ) {
+    LaunchedEffect(accountType) {
+        viewModel.loadCards(accountType)
+    }
+
     if (accountType == AccountType.STUDENT) {
-        StudentDiscoverContent(onOpenNearbyJobs, onViewJobLocation)
+        StudentDiscoverContent(
+            onOpenNearbyJobs = onOpenNearbyJobs,
+            onViewJobLocation = onViewJobLocation,
+            viewModel = viewModel
+        )
     } else {
-        CompanyDiscoverContent()
+        CompanyDiscoverContent(viewModel = viewModel)
     }
 }
 
@@ -106,8 +118,10 @@ fun DiscoverScreen(
 @Composable
 private fun StudentDiscoverContent(
     onOpenNearbyJobs: () -> Unit,
-    onViewJobLocation: (String) -> Unit
+    onViewJobLocation: (String) -> Unit,
+    viewModel: DiscoverViewModel
 ) {
+    val jobStack by viewModel.jobStack.collectAsState()
     var swipedIds by remember { mutableStateOf(setOf<String>()) }
     var searchQuery by remember { mutableStateOf("") }
     var remoteFilter by remember { mutableStateOf<RemoteType?>(null) }
@@ -116,21 +130,33 @@ private fun StudentDiscoverContent(
     var matchedJob by remember { mutableStateOf<JobPosting?>(null) }
     var detailJob by remember { mutableStateOf<JobPosting?>(null) }
 
-    val visibleDeck = remember(swipedIds, searchQuery, remoteFilter) {
-        MockData.jobPostings.filter { job ->
+    val rawDeck = if (jobStack.isNotEmpty()) jobStack else MockData.jobPostings
+
+    val visibleDeck = remember(rawDeck, swipedIds, searchQuery, remoteFilter) {
+        rawDeck.filter { job ->
             job.id !in swipedIds &&
-                (remoteFilter == null || job.remoteType == remoteFilter) &&
-                (searchQuery.isBlank() ||
-                    job.role.contains(searchQuery, ignoreCase = true) ||
-                    job.company.contains(searchQuery, ignoreCase = true) ||
-                    job.tags.any { it.contains(searchQuery, ignoreCase = true) })
+                    (remoteFilter == null || job.remoteType == remoteFilter) &&
+                    (searchQuery.isBlank() ||
+                            job.role.contains(searchQuery, ignoreCase = true) ||
+                            job.company.contains(searchQuery, ignoreCase = true) ||
+                            job.tags.any { it.contains(searchQuery, ignoreCase = true) })
         }
     }
 
     fun decide(job: JobPosting, direction: SwipeDirection) {
         swipedIds = swipedIds + job.id
         lastAction = job to direction
-        if (direction == SwipeDirection.RIGHT && job.willMatch) matchedJob = job
+
+        viewModel.onSwipe(
+            userId = "student_user",
+            targetId = job.id,
+            isLike = direction == SwipeDirection.RIGHT,
+            onMatchFound = { isMatch ->
+                if (isMatch || (direction == SwipeDirection.RIGHT && job.willMatch)) {
+                    matchedJob = job
+                }
+            }
+        )
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -171,7 +197,7 @@ private fun StudentDiscoverContent(
             )
 
             Spacer(Modifier.height(10.dp))
-            ProgressRow(reviewed = swipedIds.size, total = MockData.jobPostings.size)
+            ProgressRow(reviewed = swipedIds.size, total = rawDeck.size)
 
             if (visibleDeck.isEmpty() && (searchQuery.isNotBlank() || remoteFilter != null)) {
                 NoResultsMessage(Modifier.weight(1f))
@@ -563,7 +589,10 @@ private fun DetailRow(icon: ImageVector, text: String) {
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun CompanyDiscoverContent() {
+private fun CompanyDiscoverContent(
+    viewModel: DiscoverViewModel
+) {
+    val studentStack by viewModel.studentStack.collectAsState()
     var swipedIds by remember { mutableStateOf(setOf<String>()) }
     var pendingSwipe by remember { mutableStateOf<SwipeDirection?>(null) }
     var lastAction by remember { mutableStateOf<Pair<StudentProfile, SwipeDirection>?>(null) }
@@ -571,14 +600,26 @@ private fun CompanyDiscoverContent() {
     var detailStudent by remember { mutableStateOf<StudentProfile?>(null) }
     var mode by remember { mutableStateOf(BrowseMode.SWIPE) }
 
-    val visibleDeck = remember(swipedIds) {
-        MockData.studentProfiles.filter { it.id !in swipedIds }
+    val rawDeck = if (studentStack.isNotEmpty()) studentStack else MockData.studentProfiles
+
+    val visibleDeck = remember(rawDeck, swipedIds) {
+        rawDeck.filter { it.id !in swipedIds }
     }
 
     fun decide(student: StudentProfile, direction: SwipeDirection) {
         swipedIds = swipedIds + student.id
         lastAction = student to direction
-        if (direction == SwipeDirection.RIGHT && student.willMatch) matchedStudent = student
+
+        viewModel.onSwipe(
+            userId = "company_user",
+            targetId = student.id,
+            isLike = direction == SwipeDirection.RIGHT,
+            onMatchFound = { isMatch ->
+                if (isMatch || (direction == SwipeDirection.RIGHT && student.willMatch)) {
+                    matchedStudent = student
+                }
+            }
+        )
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -607,7 +648,7 @@ private fun CompanyDiscoverContent() {
             }
 
             Spacer(Modifier.height(10.dp))
-            ProgressRow(reviewed = swipedIds.size, total = MockData.studentProfiles.size)
+            ProgressRow(reviewed = swipedIds.size, total = rawDeck.size)
 
             when (mode) {
                 BrowseMode.SWIPE -> SwipeCardStack(

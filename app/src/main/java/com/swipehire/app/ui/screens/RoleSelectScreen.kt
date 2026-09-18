@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,6 +26,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,14 +36,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.swipehire.app.data.AccountType
+import com.swipehire.app.data.repository.AppRepository
 import com.swipehire.app.ui.theme.Mint20
 import com.swipehire.app.ui.theme.Mint40
 import com.swipehire.app.ui.theme.Violet20
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.glow
+import kotlinx.coroutines.launch
 
 @Composable
 fun RoleSelectScreen(onRoleChosen: (AccountType) -> Unit) {
+    val repository = remember { AppRepository() }
+    val scope = rememberCoroutineScope()
+
     Column(
         Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center
@@ -61,7 +68,12 @@ fun RoleSelectScreen(onRoleChosen: (AccountType) -> Unit) {
             icon = Icons.Filled.School,
             gradient = Brush.linearGradient(listOf(Violet40, Violet20)),
             accent = Violet40,
-            onClick = { onRoleChosen(AccountType.STUDENT) }
+            onClick = {
+                scope.launch {
+                    repository.getJobsFromApi()
+                }
+                onRoleChosen(AccountType.STUDENT)
+            }
         )
         Spacer(Modifier.height(16.dp))
         RoleCard(
@@ -70,7 +82,12 @@ fun RoleSelectScreen(onRoleChosen: (AccountType) -> Unit) {
             icon = Icons.Filled.Business,
             gradient = Brush.linearGradient(listOf(Mint40, Mint20)),
             accent = Mint40,
-            onClick = { onRoleChosen(AccountType.COMPANY) }
+            onClick = {
+                scope.launch {
+                    repository.getStudentsFromApi()
+                }
+                onRoleChosen(AccountType.COMPANY)
+            }
         )
     }
 }

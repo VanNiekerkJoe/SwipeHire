@@ -1,0 +1,228 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\users\\emeris\\desktop\\prog7314\\swipehire\\swipehire.api\\swipehire.api\\controllers\\jobscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\controllers\\jobscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\users\\emeris\\desktop\\prog7314\\swipehire\\swipehire.api\\swipehire.api\\dtos\\feeddtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\dtos\\feeddtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\users\\emeris\\desktop\\prog7314\\swipehire\\swipehire.api\\swipehire.api\\controllers\\swipescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\controllers\\swipescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\users\\emeris\\desktop\\prog7314\\swipehire\\swipehire.api\\swipehire.api\\controllers\\companiescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\controllers\\companiescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\users\\emeris\\desktop\\prog7314\\swipehire\\swipehire.api\\swipehire.api\\controllers\\studentscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\controllers\\studentscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\users\\emeris\\desktop\\prog7314\\swipehire\\swipehire.api\\swipehire.api\\dtos\\profiledtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\dtos\\profiledtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\users\\emeris\\desktop\\prog7314\\swipehire\\swipehire.api\\swipehire.api\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\properties\\launchsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\users\\emeris\\desktop\\prog7314\\swipehire\\swipehire.api\\swipehire.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\users\\emeris\\desktop\\prog7314\\swipehire\\swipehire.api\\swipehire.api\\swipehire.api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\swipehire.api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\users\\emeris\\desktop\\prog7314\\swipehire\\swipehire.api\\swipehire.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\users\\emeris\\desktop\\prog7314\\swipehire\\swipehire.api\\swipehire.api\\controllers\\locationcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\controllers\\locationcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\users\\emeris\\desktop\\prog7314\\swipehire\\swipehire.api\\swipehire.api\\dtos\\swipedtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{86F1596E-E686-448B-B243-4A024F2B1D6D}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\dtos\\swipedtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{75188d03-9892-4ae2-abf1-207126247ce5}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "CompaniesController.cs",
+              "DocumentMoniker": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\CompaniesController.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\Controllers\\CompaniesController.cs",
+              "ToolTip": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\CompaniesController.cs",
+              "RelativeToolTip": "SwipeHire.Api\\Controllers\\CompaniesController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACEAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T21:15:18.557Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "JobsController.cs",
+              "DocumentMoniker": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\JobsController.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\Controllers\\JobsController.cs",
+              "ToolTip": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\JobsController.cs",
+              "RelativeToolTip": "SwipeHire.Api\\Controllers\\JobsController.cs",
+              "ViewState": "AgIAACIAAAAANDMzMzMNwEwAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T21:06:58.873Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "FeedDtos.cs",
+              "DocumentMoniker": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\DTOs\\FeedDtos.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\DTOs\\FeedDtos.cs",
+              "ToolTip": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\DTOs\\FeedDtos.cs",
+              "RelativeToolTip": "SwipeHire.Api\\DTOs\\FeedDtos.cs",
+              "ViewState": "AgIAAA4AAAAAAAAAAAAowCoAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T21:06:17.949Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Program.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\Program.cs",
+              "ToolTip": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Program.cs",
+              "RelativeToolTip": "SwipeHire.Api\\Program.cs",
+              "ViewState": "AgIAABUAAAAA//////8PwB4AAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T18:59:35.523Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SwipesController.cs",
+              "DocumentMoniker": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\SwipesController.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\Controllers\\SwipesController.cs",
+              "ToolTip": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\SwipesController.cs",
+              "RelativeToolTip": "SwipeHire.Api\\Controllers\\SwipesController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T18:53:49.759Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "StudentsController.cs",
+              "DocumentMoniker": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\StudentsController.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\Controllers\\StudentsController.cs",
+              "ToolTip": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\StudentsController.cs",
+              "RelativeToolTip": "SwipeHire.Api\\Controllers\\StudentsController.cs",
+              "ViewState": "AgIAABwAAAAAAAAAAAAuwEEAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T21:07:31.842Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "ProfileDtos.cs",
+              "DocumentMoniker": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\DTOs\\ProfileDtos.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\DTOs\\ProfileDtos.cs",
+              "ToolTip": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\DTOs\\ProfileDtos.cs",
+              "RelativeToolTip": "SwipeHire.Api\\DTOs\\ProfileDtos.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T21:13:47.378Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "launchSettings.json",
+              "DocumentMoniker": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Properties\\launchSettings.json",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\Properties\\launchSettings.json",
+              "ToolTip": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Properties\\launchSettings.json",
+              "RelativeToolTip": "SwipeHire.Api\\Properties\\launchSettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAuAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-09-18T18:56:47.228Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\appsettings.json",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\appsettings.json",
+              "ToolTip": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\appsettings.json",
+              "RelativeToolTip": "SwipeHire.Api\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-09-18T18:54:55.202Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "LocationController.cs",
+              "DocumentMoniker": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\LocationController.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\Controllers\\LocationController.cs",
+              "ToolTip": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\LocationController.cs",
+              "RelativeToolTip": "SwipeHire.Api\\Controllers\\LocationController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T18:54:28.421Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "SwipeDtos.cs",
+              "DocumentMoniker": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\DTOs\\SwipeDtos.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\DTOs\\SwipeDtos.cs",
+              "ToolTip": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\DTOs\\SwipeDtos.cs",
+              "RelativeToolTip": "SwipeHire.Api\\DTOs\\SwipeDtos.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAABBAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-18T18:52:32.018Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "SwipeHire.Api",
+              "DocumentMoniker": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\SwipeHire.Api.csproj",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\SwipeHire.Api.csproj",
+              "ToolTip": "C:\\Users\\emeris\\Desktop\\PROG7314\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\SwipeHire.Api.csproj",
+              "RelativeToolTip": "SwipeHire.Api\\SwipeHire.Api.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-09-18T18:51:32.207Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

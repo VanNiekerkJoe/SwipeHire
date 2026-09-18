@@ -3,8 +3,8 @@ package com.swipehire.app.ui.screens
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +26,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,16 +37,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.swipehire.app.data.ChatMessage
 import com.swipehire.app.data.MockData
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.glow
+import com.swipehire.app.viewmodel.ChatViewModel
 
 @Composable
-fun ChatDetailScreen(matchId: String, onBack: () -> Unit) {
-    val match = MockData.matches.find { it.id == matchId } ?: return
+fun ChatDetailScreen(
+    matchId: String,
+    onBack: () -> Unit,
+    viewModel: ChatViewModel = viewModel()
+) {
+    val currentUserId = "student_user"
+    val match = remember(matchId) { MockData.matches.find { it.id == matchId } }
     var input by remember { mutableStateOf("") }
-    var messages by remember { mutableStateOf(match.messages) }
+
+    // Observe real-time messages
+    val liveMessages by viewModel.messages.collectAsState()
+
+    LaunchedEffect(matchId) {
+        viewModel.observeMessages(matchId, currentUserId)
+    }
+
+    val displayMessages = if (liveMessages.isNotEmpty()) liveMessages else match?.messages ?: emptyList()
 
     Column(Modifier.fillMaxSize()) {
         Surface(
@@ -60,8 +77,8 @@ fun ChatDetailScreen(matchId: String, onBack: () -> Unit) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
                 }
                 Column {
-                    Text(match.name, style = MaterialTheme.typography.titleMedium)
-                    Text(match.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(match?.name ?: "Chat", style = MaterialTheme.typography.titleMedium)
+                    Text(match?.subtitle ?: "", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -70,7 +87,7 @@ fun ChatDetailScreen(matchId: String, onBack: () -> Unit) {
             Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(messages) { message -> MessageBubble(message) }
+            items(displayMessages) { message -> MessageBubble(message) }
         }
 
         Row(
@@ -92,11 +109,7 @@ fun ChatDetailScreen(matchId: String, onBack: () -> Unit) {
             IconButton(
                 onClick = {
                     if (input.isNotBlank()) {
-                        messages = messages + ChatMessage(
-                            id = (messages.size + 1).toString(),
-                            text = input,
-                            fromMe = true
-                        )
+                        viewModel.sendMessage(matchId, currentUserId, input)
                         input = ""
                     }
                 },

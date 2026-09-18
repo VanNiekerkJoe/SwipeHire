@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "998671821734",
+    "project_id": "swipehire-adc92",
+    "storage_bucket": "swipehire-adc92.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:998671821734:android:4774bc2ea6390abd34bd67",
+        "android_client_info": {
+          "package_name": "com.swipehire.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5g-xIbhmpgOWBb5xw7dD-qgSVqpUTEjU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

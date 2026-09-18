@@ -1,6 +1,5 @@
 package com.swipehire.app.ui.screens
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,9 +31,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,7 +41,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -72,9 +70,6 @@ fun SettingsScreen(
             modifier = Modifier.padding(20.dp)
         )
 
-        // Account type (student ↔ company) has its own prominent switcher on the
-        // Profile tab now — it's an identity change, not a notification-style
-        // preference, so it doesn't belong buried in this list.
         AccountTypeNote(current = state.accountType)
 
         SettingsSection(title = "Notifications", icon = Icons.Filled.NotificationsActive) {
@@ -230,4 +225,3 @@ private fun AccountTypeNote(current: AccountType) {
         }
     }
 }
-

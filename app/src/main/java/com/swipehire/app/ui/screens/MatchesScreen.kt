@@ -7,11 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,13 +37,15 @@ import com.swipehire.app.ui.theme.glow
 
 @Composable
 fun MatchesScreen(onOpenChat: (String) -> Unit) {
+    val matchesList = MockData.matches
+
     Column(Modifier.fillMaxSize()) {
         Text(
             "Matches",
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(20.dp)
         )
-        if (MockData.matches.isEmpty()) {
+        if (matchesList.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("No matches yet — keep swiping!", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -53,7 +54,7 @@ fun MatchesScreen(onOpenChat: (String) -> Unit) {
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(MockData.matches) { match ->
+                items(matchesList, key = { it.id }) { match ->
                     MatchRow(match, onClick = { onOpenChat(match.id) })
                 }
             }

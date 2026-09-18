@@ -52,6 +52,7 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.swipehire.app.data.AccountType
 import com.swipehire.app.data.JobPosting
 import com.swipehire.app.data.MockData
 import com.swipehire.app.ui.theme.Mint40
@@ -59,6 +60,7 @@ import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.glow
 import com.swipehire.app.util.distanceKm
 import com.swipehire.app.util.formatDistance
+import com.swipehire.app.viewmodel.DiscoverViewModel
 import com.swipehire.app.viewmodel.NearbyJobsViewModel
 
 // Roodepoort — used as the map's starting view before we have a location fix.
@@ -67,23 +69,34 @@ private val FallbackCenter = LatLng(-26.1006, 27.8563)
 @Composable
 fun NearbyJobsScreen(
     viewModel: NearbyJobsViewModel = viewModel(),
+    discoverViewModel: DiscoverViewModel = viewModel(),
     onBack: () -> Unit,
     onOpenJob: (String) -> Unit
 ) {
     val context = LocalContext.current
     val userLocation by viewModel.userLocation.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val jobStack by discoverViewModel.jobStack.collectAsState()
+
+    LaunchedEffect(Unit) {
+        discoverViewModel.loadCards(AccountType.STUDENT)
+    }
 
     var hasLocationPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
-                PackageManager.PERMISSION_GRANTED
+                    PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                    PackageManager.PERMISSION_GRANTED
         )
     }
 
+    // Handles multiple permission requests safely
     val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         hasLocationPermission = granted
         if (granted) viewModel.fetchCurrentLocation()
     }
@@ -92,12 +105,21 @@ fun NearbyJobsScreen(
         if (hasLocationPermission) viewModel.fetchCurrentLocation()
     }
 
-    val sortedJobs = remember(userLocation) {
+    val rawJobs = if (jobStack.isNotEmpty()) jobStack else MockData.jobPostings
+
+    // Trigger REST API Geocoding calls for job addresses when rawJobs loads
+    LaunchedEffect(rawJobs) {
+        rawJobs.forEach { job ->
+            viewModel.geocodeAddress(job.workAddress)
+        }
+    }
+
+    val sortedJobs = remember(userLocation, rawJobs) {
         val loc = userLocation
         if (loc == null) {
-            MockData.jobPostings.map { it to null as Double? }
+            rawJobs.map { it to null as Double? }
         } else {
-            MockData.jobPostings
+            rawJobs
                 .map { job -> job to distanceKm(loc.latitude, loc.longitude, job.latitude, job.longitude) }
                 .sortedBy { it.second }
         }
@@ -121,7 +143,14 @@ fun NearbyJobsScreen(
 
         if (!hasLocationPermission) {
             LocationPermissionPrompt(
-                onGrant = { permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION) }
+                onGrant = {
+                    permissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                }
             )
             return@Column
         }

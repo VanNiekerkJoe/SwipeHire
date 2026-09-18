@@ -25,6 +25,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +33,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.swipehire.app.data.remote.FirestoreSeeder
+import com.swipehire.app.data.repository.AppRepository
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.auroraMesh
 import com.swipehire.app.ui.theme.glow
@@ -41,6 +44,17 @@ fun LoginScreen(
     onContinueWithGoogle: () -> Unit,
     onUseBiometric: () -> Unit
 ) {
+    // Warm up the C# API feed and seed database on launch
+    LaunchedEffect(Unit) {
+        FirestoreSeeder.seedDatabase()
+        try {
+            val repository = AppRepository()
+            repository.getJobsFromApi()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     Box(
         Modifier
             .fillMaxSize()
