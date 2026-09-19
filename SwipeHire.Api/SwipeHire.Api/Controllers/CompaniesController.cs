@@ -1,17 +1,20 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SwipeHire.Api.DTOs;
+using SwipeHire.Api.Services;
 
 namespace SwipeHire.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CompaniesController : ControllerBase
+    public sealed class CompaniesController(FirestoreDataService database) : ControllerBase
     {
         [HttpPost]
-        public IActionResult CreateCompany([FromBody] CreateCompanyDto dto)
+        public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyDto dto, CancellationToken cancellationToken)
         {
-            var newId = $"c_{Guid.NewGuid().ToString()[..8]}";
+            if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Industry))
+                return ValidationProblem("Company name and industry are required.");
 
+            var newId = await database.UpsertCompanyAsync(null, dto, cancellationToken);
             return CreatedAtAction(nameof(CreateCompany), new ProfileResponseDto
             {
                 Id = newId,
@@ -21,14 +24,13 @@ namespace SwipeHire.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateCompany(string id, [FromBody] UpdateCompanyDto dto)
+        public async Task<IActionResult> UpdateCompany(string id, [FromBody] CreateCompanyDto dto, CancellationToken cancellationToken)
         {
-            return Ok(new ProfileResponseDto
-            {
-                Id = id,
-                Success = true,
-                Message = "Company profile updated successfully."
-            });
+            if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Industry))
+                return ValidationProblem("Company name and industry are required.");
+
+            await database.UpsertCompanyAsync(id, dto, cancellationToken);
+            return Ok(new ProfileResponseDto { Id = id, Success = true, Message = "Company profile updated successfully." });
         }
     }
 }
