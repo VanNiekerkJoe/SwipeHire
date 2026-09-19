@@ -1,18 +1,19 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SwipeHire.Api.DTOs;
+using SwipeHire.Api.Services;
 
 namespace SwipeHire.Api.Controllers;
 
 [ApiController]
 [Route("api/swipes")]
-public class SwipesController : ControllerBase
+public sealed class SwipesController(FirestoreDataService database) : ControllerBase
 {
     [HttpPost]
-    public IActionResult RecordSwipe([FromBody] SwipeRequest request)
+    public async Task<IActionResult> RecordSwipe([FromBody] SwipeRequest request, CancellationToken cancellationToken)
     {
-        bool isMatch = request.IsLike;
-        string? matchId = isMatch ? $"m_{Guid.NewGuid().ToString()[..6]}" : null;
+        if (string.IsNullOrWhiteSpace(request.UserId) || string.IsNullOrWhiteSpace(request.TargetId))
+            return ValidationProblem("UserId and TargetId are required.");
 
-        return Ok(new SwipeResponse(isMatch, matchId));
+        return Ok(await database.RecordSwipeAsync(request, cancellationToken));
     }
 }
