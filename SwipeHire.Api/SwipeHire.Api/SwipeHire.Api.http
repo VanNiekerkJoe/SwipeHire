@@ -4,3 +4,52 @@ GET {{SwipeHire.Api_HostAddress}}/weatherforecast/
 Accept: application/json
 
 ###
+
+GET {{SwipeHire.Api_HostAddress}}/api/students
+Accept: application/json
+
+###
+
+POST {{SwipeHire.Api_HostAddress}}/api/location/geocode
+Content-Type: application/json
+
+{
+  "address": "123 Rivonia Road, Sandton"
+}
+
+###
+
+POST {{SwipeHire.Api_HostAddress}}/api/swipes
+Content-Type: application/json
+
+{
+  "userId": "student_user",
+  "targetId": "j1",
+  "isLike": true
+}
+
+###
+
+GET {{SwipeHire.Api_HostAddress}}/api/users/student_user/saved
+Accept: application/json
+
+###
+
+PUT {{SwipeHire.Api_HostAddress}}/api/users/student_user/saved/job/j1
+Content-Type: application/json
+
+{
+  "saved": true
+}
+
+###
+
+PUT {{SwipeHire.Api_HostAddress}}/api/users/student_user/settings
+Content-Type: application/json
+
+{
+  "pushNotifications": true,
+  "matchAlerts": true,
+  "messageAlerts": true,
+  "profileVisible": true
+}
