@@ -1,0 +1,88 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Desktop\\SwipeHire\\SwipeHire.Api\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{9635F5DE-6E9E-1006-218C-52CB37A54316}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\desktop\\swipehire\\swipehire.api\\swipehire.api\\controllers\\jobscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9635F5DE-6E9E-1006-218C-52CB37A54316}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\controllers\\jobscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9635F5DE-6E9E-1006-218C-52CB37A54316}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\desktop\\swipehire\\swipehire.api\\swipehire.api\\controllers\\companiescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9635F5DE-6E9E-1006-218C-52CB37A54316}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\controllers\\companiescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9635F5DE-6E9E-1006-218C-52CB37A54316}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\desktop\\swipehire\\swipehire.api\\swipehire.api\\dtos\\swipedtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9635F5DE-6E9E-1006-218C-52CB37A54316}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\dtos\\swipedtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{9635F5DE-6E9E-1006-218C-52CB37A54316}|SwipeHire.Api\\SwipeHire.Api.csproj|c:\\desktop\\swipehire\\swipehire.api\\swipehire.api\\dtos\\feeddtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{9635F5DE-6E9E-1006-218C-52CB37A54316}|SwipeHire.Api\\SwipeHire.Api.csproj|solutionrelative:swipehire.api\\dtos\\feeddtos.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "JobsController.cs",
+              "DocumentMoniker": "C:\\Desktop\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\JobsController.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\Controllers\\JobsController.cs",
+              "ToolTip": "C:\\Desktop\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\JobsController.cs",
+              "RelativeToolTip": "SwipeHire.Api\\Controllers\\JobsController.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAB0AAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-19T12:09:03.425Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CompaniesController.cs",
+              "DocumentMoniker": "C:\\Desktop\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\CompaniesController.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\Controllers\\CompaniesController.cs",
+              "ToolTip": "C:\\Desktop\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\Controllers\\CompaniesController.cs",
+              "RelativeToolTip": "SwipeHire.Api\\Controllers\\CompaniesController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-19T12:08:33.177Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "SwipeDtos.cs",
+              "DocumentMoniker": "C:\\Desktop\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\DTOs\\SwipeDtos.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\DTOs\\SwipeDtos.cs",
+              "ToolTip": "C:\\Desktop\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\DTOs\\SwipeDtos.cs",
+              "RelativeToolTip": "SwipeHire.Api\\DTOs\\SwipeDtos.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-19T12:08:28.681Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "FeedDtos.cs",
+              "DocumentMoniker": "C:\\Desktop\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\DTOs\\FeedDtos.cs",
+              "RelativeDocumentMoniker": "SwipeHire.Api\\DTOs\\FeedDtos.cs",
+              "ToolTip": "C:\\Desktop\\SwipeHire\\SwipeHire.Api\\SwipeHire.Api\\DTOs\\FeedDtos.cs",
+              "RelativeToolTip": "SwipeHire.Api\\DTOs\\FeedDtos.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-09-19T12:07:55.758Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
