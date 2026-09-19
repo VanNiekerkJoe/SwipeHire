@@ -43,12 +43,6 @@ interface SwipeHireApi {
     @GET("api/students")
     suspend fun getStudents(): List<StudentProfileDto>
 
-    @POST("api/swipes")
-    suspend fun recordSwipe(@Body request: SwipeRequestDto): SwipeResponseDto
-
-    @POST("api/location/geocode")
-    suspend fun geocodeAddress(@Body request: GeocodeRequestDto): GeocodeResponseDto
-
     // Student Profiles
     @POST("api/students")
     suspend fun createStudent(@Body request: CreateStudentDto): ProfileResponseDto
@@ -74,4 +68,24 @@ interface SwipeHireApi {
 
     @DELETE("api/jobs/{id}")
     suspend fun deleteJob(@Path("id") id: String): ProfileResponseDto
+
+    @GET("api/users/{userId}/saved")
+    suspend fun getSavedItems(@Path("userId") userId: String): SavedItemsDto
+
+    @PUT("api/users/{userId}/saved/{kind}/{itemId}")
+    suspend fun setSavedItem(
+        @Path("userId") userId: String,
+        @Path("kind") kind: String,
+        @Path("itemId") itemId: String,
+        @Body request: SetSavedItemRequest
+    ): SavedItemsDto
+
+    @GET("api/users/{userId}/settings")
+    suspend fun getUserSettings(@Path("userId") userId: String): UserSettingsDto
+
+    @PUT("api/users/{userId}/settings")
+    suspend fun updateUserSettings(
+        @Path("userId") userId: String,
+        @Body settings: UserSettingsDto
+    ): UserSettingsDto
 }

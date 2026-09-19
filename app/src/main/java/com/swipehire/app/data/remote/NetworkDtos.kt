@@ -1,24 +1,5 @@
 package com.swipehire.app.data.remote
 
-data class SwipeRequestDto(
-    val userId: String,
-    val targetId: String,
-    val isLike: Boolean
-)
-
-data class SwipeResponseDto(
-    val isMatch: Boolean
-)
-
-data class GeocodeRequestDto(
-    val address: String
-)
-
-data class GeocodeResponseDto(
-    val latitude: Double,
-    val longitude: Double
-)
-
 data class CreateStudentDto(
     val name: String,
     val course: String,
@@ -54,4 +35,18 @@ data class CreateJobPostingDto(
     val logoInitials: String,
     val remoteType: String,
     val salaryRange: String
+)
+
+data class SavedItemsDto(
+    val savedJobIds: List<String> = emptyList(),
+    val savedStudentIds: List<String> = emptyList()
+)
+
+data class SetSavedItemRequest(val saved: Boolean)
+
+data class UserSettingsDto(
+    val pushNotifications: Boolean = true,
+    val matchAlerts: Boolean = true,
+    val messageAlerts: Boolean = true,
+    val profileVisible: Boolean = true
 )
