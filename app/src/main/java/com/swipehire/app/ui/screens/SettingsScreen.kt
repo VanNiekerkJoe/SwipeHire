@@ -54,7 +54,7 @@ import com.swipehire.app.viewmodel.SettingsViewModel
 
 /**
  * The Settings screen — this is the "Application State" deliverable: every control here
- * reads from and writes to DataStore via [SettingsViewModel], so changes survive process death.
+ * uses Firestore for account preferences and DataStore only for device-local appearance/security state.
  */
 @Composable
 fun SettingsScreen(
