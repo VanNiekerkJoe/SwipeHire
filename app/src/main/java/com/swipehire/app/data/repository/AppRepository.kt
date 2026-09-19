@@ -12,7 +12,11 @@ import com.swipehire.app.data.remote.CreateJobPostingDto
 import com.swipehire.app.data.remote.RetrofitClient
 import com.swipehire.app.data.remote.SwipeHireApi
 import com.swipehire.app.data.remote.SwipeRequest
+import com.swipehire.app.data.remote.SavedItemsDto
+import com.swipehire.app.data.remote.SetSavedItemRequest
+import com.swipehire.app.data.remote.UserSettingsDto
 import kotlinx.coroutines.flow.Flow
+import com.swipehire.app.util.matchingSkills
 
 class AppRepository {
 
@@ -36,6 +40,7 @@ class AppRepository {
     suspend fun getJobsFromApi(): List<JobPosting> {
         return try {
             val dtos = api.getJobs()
+            val viewerSkills = setOf("kotlin", "android", "rest apis", "sql", "c#")
             dtos.map { dto ->
                 JobPosting(
                     id = dto.id,
@@ -50,7 +55,7 @@ class AppRepository {
                     logoInitials = dto.logoInitials,
                     remoteType = try { RemoteType.valueOf(dto.remoteType) } catch (e: Exception) { RemoteType.HYBRID },
                     salaryRange = dto.salaryRange,
-                    matchedSkills = emptyList(),
+                    matchedSkills = matchingSkills(dto.tags, viewerSkills),
                     willMatch = true
                 )
             }
@@ -63,6 +68,7 @@ class AppRepository {
     suspend fun getStudentsFromApi(): List<StudentProfile> {
         return try {
             val dtos = api.getStudents()
+            val hiringSkills = setOf("c#", ".net", "kotlin", "security", "azure")
             dtos.map { dto ->
                 StudentProfile(
                     id = dto.id,
@@ -72,7 +78,7 @@ class AppRepository {
                     skills = dto.skills,
                     blurb = dto.blurb,
                     avatarInitials = dto.avatarInitials,
-                    matchedSkills = emptyList(),
+                    matchedSkills = matchingSkills(dto.skills, hiringSkills),
                     willMatch = true
                 )
             }
@@ -89,7 +95,7 @@ class AppRepository {
             api.createStudent(dto)
         } catch (e: Exception) {
             e.printStackTrace()
-            null
+            firestoreRepository.createStudent(dto)
         }
     }
 
@@ -98,7 +104,7 @@ class AppRepository {
             api.updateStudent(id, dto)
         } catch (e: Exception) {
             e.printStackTrace()
-            null
+            firestoreRepository.updateStudent(id, dto)
         }
     }
 
@@ -109,7 +115,7 @@ class AppRepository {
             api.createCompany(dto)
         } catch (e: Exception) {
             e.printStackTrace()
-            null
+            firestoreRepository.createCompany(dto)
         }
     }
 
@@ -118,7 +124,7 @@ class AppRepository {
             api.updateCompany(id, dto)
         } catch (e: Exception) {
             e.printStackTrace()
-            null
+            firestoreRepository.updateCompany(id, dto)
         }
     }
 
@@ -129,7 +135,7 @@ class AppRepository {
             val response = api.recordSwipe(SwipeRequest(userId, targetId, isLike))
             response.isSuccessful && (response.body()?.isMatch == true)
         } catch (e: Exception) {
-            false
+            firestoreRepository.recordSwipe(userId, targetId, isLike)
         }
     }
 
@@ -151,7 +157,7 @@ class AppRepository {
             api.deleteJob(id)
         } catch (e: Exception) {
             e.printStackTrace()
-            null
+            firestoreRepository.deleteJob(id)
         }
     }
 
@@ -160,7 +166,39 @@ class AppRepository {
             api.createJob(dto)
         } catch (e: Exception) {
             e.printStackTrace()
-            null
+            firestoreRepository.createJob(dto)
+        }
+    }
+
+    suspend fun getSavedItems(userId: String): SavedItemsDto? {
+        return try {
+            api.getSavedItems(userId)
+        } catch (e: Exception) {
+            firestoreRepository.getSavedItems(userId)
+        }
+    }
+
+    suspend fun setSavedItem(userId: String, kind: String, itemId: String, saved: Boolean): SavedItemsDto? {
+        return try {
+            api.setSavedItem(userId, kind, itemId, SetSavedItemRequest(saved))
+        } catch (e: Exception) {
+            firestoreRepository.setSavedItem(userId, kind, itemId, saved)
+        }
+    }
+
+    suspend fun getUserSettings(userId: String): UserSettingsDto? {
+        return try {
+            api.getUserSettings(userId)
+        } catch (e: Exception) {
+            firestoreRepository.getUserSettings(userId)
+        }
+    }
+
+    suspend fun updateUserSettings(userId: String, settings: UserSettingsDto): UserSettingsDto? {
+        return try {
+            api.updateUserSettings(userId, settings)
+        } catch (e: Exception) {
+            firestoreRepository.updateUserSettings(userId, settings)
         }
     }
 }
