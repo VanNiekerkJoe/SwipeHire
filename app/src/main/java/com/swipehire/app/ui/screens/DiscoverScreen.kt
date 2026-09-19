@@ -25,6 +25,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.GridView
@@ -47,6 +49,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -71,6 +74,7 @@ import com.swipehire.app.data.JobPosting
 import com.swipehire.app.data.MockData
 import com.swipehire.app.data.RemoteType
 import com.swipehire.app.data.StudentProfile
+import com.swipehire.app.data.currentFirebaseUserId
 import com.swipehire.app.ui.components.MatchCelebrationOverlay
 import com.swipehire.app.ui.components.SwipeCardStack
 import com.swipehire.app.ui.components.SwipeDirection
@@ -86,6 +90,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.swipehire.app.viewmodel.DiscoverViewModel
+import com.swipehire.app.viewmodel.SavedItemsViewModel
 
 private enum class BrowseMode { SWIPE, LIST }
 
@@ -94,20 +99,25 @@ fun DiscoverScreen(
     accountType: AccountType,
     onOpenNearbyJobs: () -> Unit = {},
     onViewJobLocation: (String) -> Unit = {},
-    viewModel: DiscoverViewModel = viewModel()
+    viewModel: DiscoverViewModel = viewModel(),
+    savedItemsViewModel: SavedItemsViewModel = viewModel()
 ) {
+    val currentUserId = currentFirebaseUserId(if (accountType == AccountType.STUDENT) "student_user" else "company_user")
     LaunchedEffect(accountType) {
         viewModel.loadCards(accountType)
+        savedItemsViewModel.load(currentUserId)
     }
 
     if (accountType == AccountType.STUDENT) {
         StudentDiscoverContent(
             onOpenNearbyJobs = onOpenNearbyJobs,
             onViewJobLocation = onViewJobLocation,
-            viewModel = viewModel
+            viewModel = viewModel,
+            savedItemsViewModel = savedItemsViewModel,
+            currentUserId = currentUserId
         )
     } else {
-        CompanyDiscoverContent(viewModel = viewModel)
+        CompanyDiscoverContent(viewModel = viewModel, savedItemsViewModel = savedItemsViewModel, currentUserId = currentUserId)
     }
 }
 
@@ -119,8 +129,11 @@ fun DiscoverScreen(
 private fun StudentDiscoverContent(
     onOpenNearbyJobs: () -> Unit,
     onViewJobLocation: (String) -> Unit,
-    viewModel: DiscoverViewModel
+    viewModel: DiscoverViewModel,
+    savedItemsViewModel: SavedItemsViewModel,
+    currentUserId: String
 ) {
+    val savedIds by savedItemsViewModel.savedJobIds.collectAsState()
     val jobStack by viewModel.jobStack.collectAsState()
     var swipedIds by remember { mutableStateOf(setOf<String>()) }
     var searchQuery by remember { mutableStateOf("") }
@@ -129,18 +142,20 @@ private fun StudentDiscoverContent(
     var lastAction by remember { mutableStateOf<Pair<JobPosting, SwipeDirection>?>(null) }
     var matchedJob by remember { mutableStateOf<JobPosting?>(null) }
     var detailJob by remember { mutableStateOf<JobPosting?>(null) }
+    var savedOnly by remember { mutableStateOf(false) }
 
     val rawDeck = if (jobStack.isNotEmpty()) jobStack else MockData.jobPostings
 
-    val visibleDeck = remember(rawDeck, swipedIds, searchQuery, remoteFilter) {
+    val visibleDeck = remember(rawDeck, swipedIds, searchQuery, remoteFilter, savedIds, savedOnly) {
         rawDeck.filter { job ->
             job.id !in swipedIds &&
+                    (!savedOnly || job.id in savedIds) &&
                     (remoteFilter == null || job.remoteType == remoteFilter) &&
                     (searchQuery.isBlank() ||
                             job.role.contains(searchQuery, ignoreCase = true) ||
                             job.company.contains(searchQuery, ignoreCase = true) ||
                             job.tags.any { it.contains(searchQuery, ignoreCase = true) })
-        }
+        }.sortedByDescending { it.matchedSkills.size }
     }
 
     fun decide(job: JobPosting, direction: SwipeDirection) {
@@ -148,7 +163,7 @@ private fun StudentDiscoverContent(
         lastAction = job to direction
 
         viewModel.onSwipe(
-            userId = "student_user",
+            userId = currentUserId,
             targetId = job.id,
             isLike = direction == SwipeDirection.RIGHT,
             onMatchFound = { isMatch ->
@@ -193,7 +208,10 @@ private fun StudentDiscoverContent(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
                 selectedRemote = remoteFilter,
-                onRemoteSelected = { remoteFilter = it }
+                onRemoteSelected = { remoteFilter = it },
+                savedOnly = savedOnly,
+                savedCount = savedIds.size,
+                onSavedOnlyChange = { savedOnly = it }
             )
 
             Spacer(Modifier.height(10.dp))
@@ -209,7 +227,15 @@ private fun StudentDiscoverContent(
                     onPendingSwipeHandled = { pendingSwipe = null },
                     onSwiped = { job, direction -> decide(job, direction) },
                     emptyContent = { EmptyDeckMessage() }
-                ) { job -> JobCard(job, onViewLocation = { onViewJobLocation(job.id) }, onInfo = { detailJob = job }) }
+                ) { job ->
+                    JobCard(
+                        job = job,
+                        isSaved = job.id in savedIds,
+                        onSaveToggle = { savedItemsViewModel.toggleJob(job.id) },
+                        onViewLocation = { onViewJobLocation(job.id) },
+                        onInfo = { detailJob = job }
+                    )
+                }
             }
 
             Row(
@@ -248,6 +274,8 @@ private fun StudentDiscoverContent(
         ModalBottomSheet(onDismissRequest = { detailJob = null }, sheetState = rememberModalBottomSheetState()) {
             JobDetailContent(
                 job = job,
+                isSaved = job.id in savedIds,
+                onSaveToggle = { savedItemsViewModel.toggleJob(job.id) },
                 onViewLocation = { onViewJobLocation(job.id); detailJob = null }
             )
         }
@@ -259,7 +287,10 @@ private fun SearchAndFilterBar(
     query: String,
     onQueryChange: (String) -> Unit,
     selectedRemote: RemoteType?,
-    onRemoteSelected: (RemoteType?) -> Unit
+    onRemoteSelected: (RemoteType?) -> Unit,
+    savedOnly: Boolean,
+    savedCount: Int,
+    onSavedOnlyChange: (Boolean) -> Unit
 ) {
     Column(Modifier.padding(horizontal = 20.dp)) {
         OutlinedTextField(
@@ -286,6 +317,14 @@ private fun SearchAndFilterBar(
                     selected = selectedRemote == type,
                     onClick = { onRemoteSelected(if (selectedRemote == type) null else type) },
                     label = { Text(type.label) }
+                )
+            }
+            item {
+                FilterChip(
+                    selected = savedOnly,
+                    onClick = { onSavedOnlyChange(!savedOnly) },
+                    leadingIcon = { Icon(Icons.Filled.Bookmark, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                    label = { Text("Saved ($savedCount)") }
                 )
             }
         }
@@ -427,7 +466,7 @@ private fun MatchedSkillsRow(skills: List<String>, accent: Color) {
 }
 
 @Composable
-private fun JobCard(job: JobPosting, onViewLocation: () -> Unit, onInfo: () -> Unit) {
+private fun JobCard(job: JobPosting, isSaved: Boolean, onSaveToggle: () -> Unit, onViewLocation: () -> Unit, onInfo: () -> Unit) {
     SwipeCardShell(
         gradient = Brush.linearGradient(listOf(Violet40, VioletDeep, Sky.copy(alpha = 0.55f))),
         initials = job.logoInitials,
@@ -447,17 +486,13 @@ private fun JobCard(job: JobPosting, onViewLocation: () -> Unit, onInfo: () -> U
                 Spacer(Modifier.width(3.dp))
                 Text(job.location, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = Violet40.copy(alpha = 0.12f),
-                modifier = Modifier.clickable(onClick = onViewLocation)
-            ) {
-                Text(
-                    "View location",
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Violet40
-                )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onSaveToggle, modifier = Modifier.size(36.dp)) {
+                    Icon(if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, contentDescription = if (isSaved) "Remove saved job" else "Save job", tint = Violet40)
+                }
+                Surface(shape = RoundedCornerShape(50), color = Violet40.copy(alpha = 0.12f), modifier = Modifier.clickable(onClick = onViewLocation)) {
+                    Text("View location", Modifier.padding(horizontal = 10.dp, vertical = 5.dp), style = MaterialTheme.typography.labelMedium, color = Violet40)
+                }
             }
         }
         Spacer(Modifier.height(6.dp))
@@ -474,7 +509,7 @@ private fun JobCard(job: JobPosting, onViewLocation: () -> Unit, onInfo: () -> U
 }
 
 @Composable
-private fun StudentCard(student: StudentProfile, onInfo: () -> Unit) {
+private fun StudentCard(student: StudentProfile, isSaved: Boolean, onSaveToggle: () -> Unit, onInfo: () -> Unit) {
     SwipeCardShell(
         gradient = Brush.linearGradient(listOf(Mint40, Mint20, Sky.copy(alpha = 0.4f))),
         initials = student.avatarInitials,
@@ -483,6 +518,11 @@ private fun StudentCard(student: StudentProfile, onInfo: () -> Unit) {
         accent = Mint40,
         onInfoClick = onInfo
     ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            IconButton(onClick = onSaveToggle) {
+                Icon(if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, contentDescription = if (isSaved) "Remove saved candidate" else "Save candidate", tint = Mint20)
+            }
+        }
         MatchedSkillsRow(student.matchedSkills, Mint20)
         Text(student.blurb, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
         Spacer(Modifier.height(14.dp))
@@ -529,7 +569,7 @@ private fun SwipeActionButton(icon: ImageVector, color: Color, onClick: () -> Un
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun JobDetailContent(job: JobPosting, onViewLocation: () -> Unit) {
+private fun JobDetailContent(job: JobPosting, isSaved: Boolean, onSaveToggle: () -> Unit, onViewLocation: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(24.dp)) {
         Text(job.role, style = MaterialTheme.typography.headlineSmall)
         Text(job.company, style = MaterialTheme.typography.titleMedium, color = Violet40)
@@ -542,6 +582,12 @@ private fun JobDetailContent(job: JobPosting, onViewLocation: () -> Unit) {
         Text("Requirements", style = MaterialTheme.typography.titleSmall)
         Spacer(Modifier.height(8.dp))
         TagRow(job.tags, Violet40)
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(onClick = onSaveToggle, modifier = Modifier.fillMaxWidth()) {
+            Icon(if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(if (isSaved) "Remove from saved" else "Save for later")
+        }
         Spacer(Modifier.height(24.dp))
         Surface(
             shape = RoundedCornerShape(16.dp),
@@ -561,7 +607,7 @@ private fun JobDetailContent(job: JobPosting, onViewLocation: () -> Unit) {
 }
 
 @Composable
-private fun StudentDetailContent(student: StudentProfile) {
+private fun StudentDetailContent(student: StudentProfile, isSaved: Boolean, onSaveToggle: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(24.dp)) {
         Text(student.name, style = MaterialTheme.typography.headlineSmall)
         Text("${student.course} · ${student.year}", style = MaterialTheme.typography.titleMedium, color = Mint40)
@@ -571,6 +617,12 @@ private fun StudentDetailContent(student: StudentProfile) {
         Text("Skills", style = MaterialTheme.typography.titleSmall)
         Spacer(Modifier.height(8.dp))
         TagRow(student.skills, Mint20)
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(onClick = onSaveToggle, modifier = Modifier.fillMaxWidth()) {
+            Icon(if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text(if (isSaved) "Remove from saved" else "Save for later")
+        }
         Spacer(Modifier.height(12.dp))
     }
 }
@@ -590,8 +642,11 @@ private fun DetailRow(icon: ImageVector, text: String) {
 
 @Composable
 private fun CompanyDiscoverContent(
-    viewModel: DiscoverViewModel
+    viewModel: DiscoverViewModel,
+    savedItemsViewModel: SavedItemsViewModel,
+    currentUserId: String
 ) {
+    val savedIds by savedItemsViewModel.savedStudentIds.collectAsState()
     val studentStack by viewModel.studentStack.collectAsState()
     var swipedIds by remember { mutableStateOf(setOf<String>()) }
     var pendingSwipe by remember { mutableStateOf<SwipeDirection?>(null) }
@@ -599,11 +654,13 @@ private fun CompanyDiscoverContent(
     var matchedStudent by remember { mutableStateOf<StudentProfile?>(null) }
     var detailStudent by remember { mutableStateOf<StudentProfile?>(null) }
     var mode by remember { mutableStateOf(BrowseMode.SWIPE) }
+    var savedOnly by remember { mutableStateOf(false) }
 
     val rawDeck = if (studentStack.isNotEmpty()) studentStack else MockData.studentProfiles
 
-    val visibleDeck = remember(rawDeck, swipedIds) {
-        rawDeck.filter { it.id !in swipedIds }
+    val visibleDeck = remember(rawDeck, swipedIds, savedIds, savedOnly) {
+        rawDeck.filter { it.id !in swipedIds && (!savedOnly || it.id in savedIds) }
+            .sortedByDescending { it.matchedSkills.size }
     }
 
     fun decide(student: StudentProfile, direction: SwipeDirection) {
@@ -611,7 +668,7 @@ private fun CompanyDiscoverContent(
         lastAction = student to direction
 
         viewModel.onSwipe(
-            userId = "company_user",
+            userId = currentUserId,
             targetId = student.id,
             isLike = direction == SwipeDirection.RIGHT,
             onMatchFound = { isMatch ->
@@ -649,6 +706,14 @@ private fun CompanyDiscoverContent(
 
             Spacer(Modifier.height(10.dp))
             ProgressRow(reviewed = swipedIds.size, total = rawDeck.size)
+            Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), horizontalArrangement = Arrangement.End) {
+                FilterChip(
+                    selected = savedOnly,
+                    onClick = { savedOnly = !savedOnly },
+                    leadingIcon = { Icon(Icons.Filled.Bookmark, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                    label = { Text("Saved (${savedIds.size})") }
+                )
+            }
 
             when (mode) {
                 BrowseMode.SWIPE -> SwipeCardStack(
@@ -658,7 +723,14 @@ private fun CompanyDiscoverContent(
                     onPendingSwipeHandled = { pendingSwipe = null },
                     onSwiped = { student, direction -> decide(student, direction) },
                     emptyContent = { EmptyDeckMessage() }
-                ) { student -> StudentCard(student, onInfo = { detailStudent = student }) }
+                ) { student ->
+                    StudentCard(
+                        student = student,
+                        isSaved = student.id in savedIds,
+                        onSaveToggle = { savedItemsViewModel.toggleStudent(student.id) },
+                        onInfo = { detailStudent = student }
+                    )
+                }
 
                 BrowseMode.LIST -> if (visibleDeck.isEmpty()) {
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { EmptyDeckMessage() }
@@ -672,6 +744,8 @@ private fun CompanyDiscoverContent(
                                 student = student,
                                 onPass = { decide(student, SwipeDirection.LEFT) },
                                 onLike = { decide(student, SwipeDirection.RIGHT) },
+                                isSaved = student.id in savedIds,
+                                onSaveToggle = { savedItemsViewModel.toggleStudent(student.id) },
                                 onClick = { detailStudent = student }
                             )
                             Spacer(Modifier.height(10.dp))
@@ -718,7 +792,11 @@ private fun CompanyDiscoverContent(
 
     detailStudent?.let { student ->
         ModalBottomSheet(onDismissRequest = { detailStudent = null }, sheetState = rememberModalBottomSheetState()) {
-            StudentDetailContent(student)
+            StudentDetailContent(
+                student = student,
+                isSaved = student.id in savedIds,
+                onSaveToggle = { savedItemsViewModel.toggleStudent(student.id) }
+            )
         }
     }
 }
@@ -728,6 +806,8 @@ private fun CandidateListRow(
     student: StudentProfile,
     onPass: () -> Unit,
     onLike: () -> Unit,
+    isSaved: Boolean,
+    onSaveToggle: () -> Unit,
     onClick: () -> Unit
 ) {
     Card(
@@ -748,6 +828,9 @@ private fun CandidateListRow(
                 Column(Modifier.weight(1f)) {
                     Text(student.name, style = MaterialTheme.typography.titleMedium)
                     Text("${student.course} · ${student.year}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                IconButton(onClick = onSaveToggle) {
+                    Icon(if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, contentDescription = if (isSaved) "Remove saved candidate" else "Save candidate", tint = Mint40)
                 }
             }
             if (student.matchedSkills.isNotEmpty()) {
