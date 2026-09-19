@@ -1,49 +1,24 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SwipeHire.Api.DTOs;
+using SwipeHire.Api.Services;
 
 namespace SwipeHire.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class StudentsController : ControllerBase
+    public sealed class StudentsController(FirestoreDataService database) : ControllerBase
     {
         [HttpGet]
-        public IActionResult GetStudents()
-        {
-            var students = new List<StudentProfileDto>
-            {
-                new StudentProfileDto
-                {
-                    Id = "s1",
-                    Name = "Amahle Dlamini",
-                    Course = "BSc Computer Science",
-                    Year = "Final year",
-                    Skills = new List<string> { "Java", "Kotlin", "REST APIs" },
-                    Blurb = "Built two published Android apps.",
-                    AvatarInitials = "AD"
-                },
-                new StudentProfileDto
-                {
-                    Id = "s2",
-                    Name = "Sipho Nkosi",
-                    Course = "BCAD Application Development",
-                    Year = "Final year",
-                    Skills = new List<string> { "C#", ".NET", "Azure" },
-                    Blurb = "Interned on a cloud-hosted event management platform.",
-                    AvatarInitials = "SN"
-                }
-            };
-
-            return Ok(students);
-        }
+        public async Task<IActionResult> GetStudents(CancellationToken cancellationToken) =>
+            Ok(await database.GetStudentsAsync(cancellationToken));
 
         [HttpPost]
-        public IActionResult CreateStudent([FromBody] CreateStudentDto dto)
+        public async Task<IActionResult> CreateStudent([FromBody] CreateStudentDto dto, CancellationToken cancellationToken)
         {
-            var newId = $"s_{Guid.NewGuid().ToString()[..8]}";
+            if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Course))
+                return ValidationProblem("Name and course are required.");
 
-            // Persist to database/Firestore context here
-
+            var newId = await database.UpsertStudentAsync(null, dto, cancellationToken);
             return CreatedAtAction(nameof(GetStudents), new ProfileResponseDto
             {
                 Id = newId,
@@ -53,16 +28,13 @@ namespace SwipeHire.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateStudent(string id, [FromBody] UpdateStudentDto dto)
+        public async Task<IActionResult> UpdateStudent(string id, [FromBody] CreateStudentDto dto, CancellationToken cancellationToken)
         {
-            // Update record in database/Firestore context here
+            if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Course))
+                return ValidationProblem("Name and course are required.");
 
-            return Ok(new ProfileResponseDto
-            {
-                Id = id,
-                Success = true,
-                Message = "Student profile updated successfully."
-            });
+            await database.UpsertStudentAsync(id, dto, cancellationToken);
+            return Ok(new ProfileResponseDto { Id = id, Success = true, Message = "Student profile updated successfully." });
         }
     }
 }
