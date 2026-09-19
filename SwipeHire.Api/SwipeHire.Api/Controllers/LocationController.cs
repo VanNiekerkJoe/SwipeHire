@@ -1,18 +1,22 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SwipeHire.Api.DTOs;
+using SwipeHire.Api.Services;
 
 namespace SwipeHire.Api.Controllers;
 
 [ApiController]
 [Route("api/location")]
-public class LocationController : ControllerBase
+public sealed class LocationController(GoogleGeocodingService geocodingService) : ControllerBase
 {
     [HttpPost("geocode")]
-    public IActionResult GeocodeAddress([FromBody] GeocodeRequest request)
+    public async Task<IActionResult> GeocodeAddress([FromBody] GeocodeRequest request, CancellationToken cancellationToken)
     {
-        double latitude = -26.1076;
-        double longitude = 28.0567;
+        if (string.IsNullOrWhiteSpace(request.Address)) return ValidationProblem("Address is required.");
 
-        return Ok(new GeocodeResponse(latitude, longitude));
+        var result = await geocodingService.GeocodeAsync(request.Address, cancellationToken);
+        if (result is null)
+            return NotFound(new { message = "The address could not be geocoded. Configure GoogleMaps:ApiKey for arbitrary addresses." });
+
+        return Ok(new GeocodeResponse(result.Value.Latitude, result.Value.Longitude));
     }
 }
