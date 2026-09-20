@@ -183,17 +183,29 @@ public sealed class FirestoreDataService
     }
 
     public async Task<IReadOnlyList<string>> GetSwipedTargetIdsAsync(
-        string userId,
-        CancellationToken cancellationToken)
+    string userId,
+    CancellationToken cancellationToken)
     {
-        var snapshot = await Database.Collection("swipes")
-            .WhereEqualTo("userId", userId)
-            .GetSnapshotAsync(cancellationToken);
-        return snapshot.Documents
-            .Select(document => document.TryGetValue<string>("targetId", out var targetId) ? targetId : "")
-            .Where(targetId => !string.IsNullOrWhiteSpace(targetId))
-            .Distinct()
-            .ToList();
+        try
+        {
+            var snapshot = await Database.Collection("swipes")
+                .WhereEqualTo("userId", userId)
+                .GetSnapshotAsync(cancellationToken);
+
+            return snapshot.Documents
+                .Select(document =>
+                    document.TryGetValue<string>("targetId", out var targetId)
+                        ? targetId
+                        : "")
+                .Where(targetId => !string.IsNullOrWhiteSpace(targetId))
+                .Distinct()
+                .ToList();
+        }
+        catch (Exception exception)
+            when (IsExpectedCancellation(exception, cancellationToken))
+        {
+            return [];
+        }
     }
 
     public async Task DeleteSwipeAsync(
