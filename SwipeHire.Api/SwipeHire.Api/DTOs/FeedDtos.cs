@@ -3,6 +3,7 @@
     public class JobPostingDto
     {
         public string Id { get; set; } = string.Empty;
+        public string CompanyId { get; set; } = string.Empty;
         public string Company { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
@@ -29,6 +30,7 @@
 
     public class CreateJobPostingDto
     {
+        public string CompanyId { get; set; } = string.Empty;
         public string Company { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;

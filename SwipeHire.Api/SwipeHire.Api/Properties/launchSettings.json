@@ -9,8 +9,8 @@
       "applicationUrl": "http://localhost:5000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "GOOGLE_APPLICATION_CREDENTIALS": "",
-        "GoogleMaps__ApiKey": ""
+        "GOOGLE_APPLICATION_CREDENTIALS": "C:\\Desktop\\SwipeHireSecrets\\swipehire-adc92-firebase-adminsdk-fbsvc-7438cf0426.json",
+        "GoogleMaps__ApiKey": "AIzaSyB9SkavWfG67r8MFkRvDU6Qb8u6ZhU7JWU"
       }
     }
   }

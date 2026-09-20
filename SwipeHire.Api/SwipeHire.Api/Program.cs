@@ -1,4 +1,3 @@
-
 namespace SwipeHire.Api
 {
     public class Program
@@ -7,6 +6,8 @@ namespace SwipeHire.Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // Console logging works consistently in Visual Studio, CI, and standard-user shells.
+            // Clearing defaults avoids Windows Event Log permission failures on lab machines.
             builder.Logging.ClearProviders();
             builder.Logging.AddConsole();
 
@@ -49,8 +50,6 @@ namespace SwipeHire.Api
                     c.RoutePrefix = "swagger"; // Serves Swagger UI at http://localhost:5000/swagger
                 });
             }
-
-            //app.UseHttpsRedirection();
 
             app.UseAuthorization();
 
