@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.swipehire.app.data.ChatMessage
 import com.swipehire.app.data.MockData
+import com.swipehire.app.data.currentFirebaseUserId
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.glow
 import com.swipehire.app.viewmodel.ChatViewModel
@@ -50,7 +51,7 @@ fun ChatDetailScreen(
     onBack: () -> Unit,
     viewModel: ChatViewModel = viewModel()
 ) {
-    val currentUserId = "student_user"
+    val currentUserId = currentFirebaseUserId("student_user")
     val match = remember(matchId) { MockData.matches.find { it.id == matchId } }
     var input by remember { mutableStateOf("") }
 
