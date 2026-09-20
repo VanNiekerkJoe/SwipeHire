@@ -17,6 +17,7 @@ import com.swipehire.app.data.MockData
 import com.swipehire.app.ui.components.SwipeHireBottomBar
 import com.swipehire.app.ui.components.SwipeHireTab
 import com.swipehire.app.ui.screens.ChatDetailScreen
+import com.swipehire.app.ui.screens.CreateJobScreen
 import com.swipehire.app.ui.screens.DiscoverScreen
 import com.swipehire.app.ui.screens.JobLocationScreen
 import com.swipehire.app.ui.screens.LoginScreen
@@ -37,6 +38,7 @@ private object Routes {
     const val SETTINGS = "settings"
     const val NEARBY_JOBS = "nearby_jobs"
     const val JOB_LOCATION = "job_location/{jobId}"
+    const val CREATE_JOB = "create_job"
 }
 
 private val mainTabRoutes = setOf(Routes.DISCOVER, Routes.MATCHES, Routes.PROFILE, Routes.SETTINGS)
@@ -120,7 +122,19 @@ fun SwipeHireApp(settingsViewModel: SettingsViewModel = viewModel()) {
             composable(Routes.PROFILE) {
                 ProfileScreen(
                     accountType = settingsState.accountType,
-                    onAccountTypeChange = { type -> settingsViewModel.setAccountType(type) }
+                    onAccountTypeChange = { type -> settingsViewModel.setAccountType(type) },
+                    onOpenCreateJob = { navController.navigate(Routes.CREATE_JOB) },
+                    onOpenSettings = { navController.navigate(Routes.SETTINGS) }
+                )
+            }
+            composable(Routes.CREATE_JOB) {
+                CreateJobScreen(
+                    onBack = { navController.popBackStack() },
+                    onPublished = {
+                        navController.navigate(Routes.DISCOVER) {
+                            popUpTo(Routes.CREATE_JOB) { inclusive = true }
+                        }
+                    }
                 )
             }
             composable(Routes.SETTINGS) {
