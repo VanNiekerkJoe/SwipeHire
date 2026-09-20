@@ -1,6 +1,9 @@
-@SwipeHire.Api_HostAddress = http://localhost:5022
+@SwipeHire.Api_HostAddress = http://localhost:5000
+@StudentUid = replace_with_student_firebase_uid
+@CompanyUid = replace_with_company_firebase_uid
+@JobId = replace_with_job_document_id
 
-GET {{SwipeHire.Api_HostAddress}}/weatherforecast/
+GET {{SwipeHire.Api_HostAddress}}/api/jobs
 Accept: application/json
 
 ###
@@ -23,19 +26,20 @@ POST {{SwipeHire.Api_HostAddress}}/api/swipes
 Content-Type: application/json
 
 {
-  "userId": "student_user",
-  "targetId": "j1",
+  "userId": "{{StudentUid}}",
+  "targetId": "{{JobId}}",
+  "targetUserId": "{{CompanyUid}}",
   "isLike": true
 }
 
 ###
 
-GET {{SwipeHire.Api_HostAddress}}/api/users/student_user/saved
+GET {{SwipeHire.Api_HostAddress}}/api/users/{{StudentUid}}/saved
 Accept: application/json
 
 ###
 
-PUT {{SwipeHire.Api_HostAddress}}/api/users/student_user/saved/job/j1
+PUT {{SwipeHire.Api_HostAddress}}/api/users/{{StudentUid}}/saved/job/{{JobId}}
 Content-Type: application/json
 
 {
@@ -44,7 +48,7 @@ Content-Type: application/json
 
 ###
 
-PUT {{SwipeHire.Api_HostAddress}}/api/users/student_user/settings
+PUT {{SwipeHire.Api_HostAddress}}/api/users/{{StudentUid}}/settings
 Content-Type: application/json
 
 {
