@@ -13,9 +13,15 @@ val swipeHireLocalProperties = Properties().apply {
     if (file.exists()) file.inputStream().use(::load)
 }
 
+val mapsApiKey = swipeHireLocalProperties.getProperty("MAPS_API_KEY")
+    ?.takeIf { it.isNotBlank() }
+    ?: "DEFAULT_API_KEY"
+
 secrets {
     propertiesFileName = "local.properties"
     defaultPropertiesFileName = "local.defaults.properties"
+    // We define this field below so a blank local value cannot generate invalid Java.
+    ignoreList.add("MAPS_API_KEY")
 }
 
 android {
@@ -30,6 +36,8 @@ android {
         versionName = "1.0"
         val apiBaseUrl = swipeHireLocalProperties.getProperty("API_BASE_URL", "http://10.0.2.2:5000/")
         buildConfigField("String", "API_BASE_URL", "\"${apiBaseUrl.trimEnd('/')}/\"")
+        buildConfigField("String", "MAPS_API_KEY", "\"$mapsApiKey\"")
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
@@ -78,6 +86,11 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-auth-ktx") // Useful for current user context
+
+    // Modern Sign in with Google flow recommended by Firebase.
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     // Coroutines integration for async Firestore calls
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
