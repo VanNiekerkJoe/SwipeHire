@@ -107,13 +107,6 @@ fun NearbyJobsScreen(
 
     val rawJobs = if (jobStack.isNotEmpty()) jobStack else MockData.jobPostings
 
-    // Trigger REST API Geocoding calls for job addresses when rawJobs loads
-    LaunchedEffect(rawJobs) {
-        rawJobs.forEach { job ->
-            viewModel.geocodeAddress(job.workAddress)
-        }
-    }
-
     val sortedJobs = remember(userLocation, rawJobs) {
         val loc = userLocation
         if (loc == null) {
