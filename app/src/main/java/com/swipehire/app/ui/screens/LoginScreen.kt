@@ -66,6 +66,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.auroraMesh
 import com.swipehire.app.ui.theme.glow
+import com.swipehire.app.ui.tr
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -225,12 +226,12 @@ fun LoginScreen(
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Violet40)
                     ) {
-                        Text("Continue with Google", fontWeight = FontWeight.Bold)
+                        Text(tr("Continue with Google"), fontWeight = FontWeight.Bold)
                     }
 
                     Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                         HorizontalDivider(Modifier.weight(1f), color = Color.White.copy(alpha = 0.25f))
-                        Text("  or email  ", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
+                        Text("  ${tr("or email")}  ", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
                         HorizontalDivider(Modifier.weight(1f), color = Color.White.copy(alpha = 0.25f))
                     }
 
@@ -247,7 +248,7 @@ fun LoginScreen(
                         value = email,
                         onValueChange = { email = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Email") },
+                        label = { Text(tr("Email")) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                         colors = fieldColors
@@ -257,7 +258,7 @@ fun LoginScreen(
                         value = password,
                         onValueChange = { password = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Password") },
+                        label = { Text(tr("Password")) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = if (registerMode) ImeAction.Next else ImeAction.Done),
@@ -269,7 +270,7 @@ fun LoginScreen(
                             value = confirmPassword,
                             onValueChange = { confirmPassword = it },
                             modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Confirm password") },
+                            label = { Text(tr("Confirm password")) },
                             singleLine = true,
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
@@ -285,7 +286,7 @@ fun LoginScreen(
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         if (busy) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = Color.White)
-                        else Text(if (registerMode) "Create account" else "Sign in")
+                        else Text(if (registerMode) tr("Create account") else tr("Sign in"))
                     }
 
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -294,11 +295,11 @@ fun LoginScreen(
                             errorMessage = null
                             infoMessage = null
                         }) {
-                            Text(if (registerMode) "Already registered?" else "Create an account", color = Color.White)
+                            Text(if (registerMode) tr("Already registered?") else tr("Create an account"), color = Color.White)
                         }
                         if (!registerMode) {
                             TextButton(onClick = ::sendPasswordReset, enabled = !busy) {
-                                Text("Forgot password?", color = Color.White)
+                                Text(tr("Forgot password?"), color = Color.White)
                             }
                         }
                     }
@@ -312,7 +313,7 @@ fun LoginScreen(
                     ) {
                         Icon(Icons.Filled.Fingerprint, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Use biometric sign-in")
+                        Text(tr("Use biometric sign-in"))
                     }
                 }
             }

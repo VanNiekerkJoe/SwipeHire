@@ -6,5 +6,6 @@ public record UserSettingsDto(
     bool PushNotifications = true,
     bool MatchAlerts = true,
     bool MessageAlerts = true,
-    bool ProfileVisible = true
+    bool ProfileVisible = true,
+    string Language = "en"
 );

@@ -27,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.swipehire.app.ui.theme.Coral
 import com.swipehire.app.ui.theme.Mint40
+import com.swipehire.app.ui.tr
 import kotlinx.coroutines.launch
 
 enum class SwipeDirection { LEFT, RIGHT }
@@ -188,7 +189,7 @@ private fun DraggableTopCard(
                 }
                 .border(2.dp, Mint40, RoundedCornerShape(10.dp))
         ) {
-            SwipeStampText("MATCH", Mint40)
+            SwipeStampText(tr("MATCH"), Mint40)
         }
         Box(
             Modifier
@@ -200,7 +201,7 @@ private fun DraggableTopCard(
                 }
                 .border(2.dp, Coral, RoundedCornerShape(10.dp))
         ) {
-            SwipeStampText("PASS", Coral)
+            SwipeStampText(tr("PASS"), Coral)
         }
     }
 }

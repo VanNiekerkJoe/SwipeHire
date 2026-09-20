@@ -85,6 +85,7 @@ import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.VioletDeep
 import com.swipehire.app.ui.theme.decorativeRings
 import com.swipehire.app.ui.theme.glow
+import com.swipehire.app.ui.tr
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -105,7 +106,7 @@ fun DiscoverScreen(
     val currentUserId = currentFirebaseUserId()
     if (currentUserId == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Sign in to browse SwipeHire.")
+            Text(tr("Sign in to browse SwipeHire."))
         }
         return
     }
@@ -193,10 +194,10 @@ private fun StudentDiscoverContent(
                 verticalAlignment = Alignment.Top
             ) {
                 Column {
-                    Text("Find your\nnext role", style = MaterialTheme.typography.headlineMedium)
+                    Text(tr("Find your\nnext role"), style = MaterialTheme.typography.headlineMedium)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Swipe right to apply, left to pass.",
+                        tr("Swipe right to apply, left to pass."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -209,7 +210,7 @@ private fun StudentDiscoverContent(
                     Row(Modifier.padding(horizontal = 14.dp, vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Filled.Map, contentDescription = null, tint = Violet40, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text("Near you", style = MaterialTheme.typography.labelMedium, color = Violet40)
+                        Text(tr("Near you"), style = MaterialTheme.typography.labelMedium, color = Violet40)
                     }
                 }
             }
@@ -313,7 +314,7 @@ private fun SearchAndFilterBar(
             value = query,
             onValueChange = onQueryChange,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search role, company, or skill") },
+            placeholder = { Text(tr("Search role, company, or skill")) },
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
             singleLine = true,
             shape = RoundedCornerShape(18.dp),
@@ -325,7 +326,7 @@ private fun SearchAndFilterBar(
                 FilterChip(
                     selected = selectedRemote == null,
                     onClick = { onRemoteSelected(null) },
-                    label = { Text("All") }
+                    label = { Text(tr("All")) }
                 )
             }
             items(RemoteType.values().toList()) { type ->
@@ -340,7 +341,7 @@ private fun SearchAndFilterBar(
                     selected = savedOnly,
                     onClick = { onSavedOnlyChange(!savedOnly) },
                     leadingIcon = { Icon(Icons.Filled.Bookmark, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                    label = { Text("Saved ($savedCount)") }
+                    label = { Text("${tr("Saved")} ($savedCount)") }
                 )
             }
         }
@@ -351,7 +352,7 @@ private fun SearchAndFilterBar(
 private fun ProgressRow(reviewed: Int, total: Int) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("$reviewed of $total reviewed", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("$reviewed / $total ${tr("reviewed")}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(Modifier.height(6.dp))
         LinearProgressIndicator(
@@ -368,8 +369,8 @@ private fun NoResultsMessage(modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(10.dp))
-        Text("No matches for that search", style = MaterialTheme.typography.titleMedium)
-        Text("Try a different keyword or clear filters.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(tr("No matches for that search"), style = MaterialTheme.typography.titleMedium)
+        Text(tr("Try a different keyword or clear filters."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -378,8 +379,8 @@ private fun EmptyDeckMessage() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(Icons.Filled.Style, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(12.dp))
-        Text("You're all caught up", style = MaterialTheme.typography.titleMedium)
-        Text("Check back soon for new matches.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(tr("You're all caught up"), style = MaterialTheme.typography.titleMedium)
+        Text(tr("Check back soon for new matches."), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -395,7 +396,7 @@ private fun UndoPill(modifier: Modifier = Modifier, onUndo: () -> Unit) {
         Row(Modifier.padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Filled.Undo, contentDescription = null, tint = Violet40, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Undo", style = MaterialTheme.typography.labelLarge, color = Violet40)
+            Text(tr("Undo"), style = MaterialTheme.typography.labelLarge, color = Violet40)
         }
     }
 }
@@ -507,7 +508,7 @@ private fun JobCard(job: JobPosting, isSaved: Boolean, onSaveToggle: () -> Unit,
                     Icon(if (isSaved) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder, contentDescription = if (isSaved) "Remove saved job" else "Save job", tint = Violet40)
                 }
                 Surface(shape = RoundedCornerShape(50), color = Violet40.copy(alpha = 0.12f), modifier = Modifier.clickable(onClick = onViewLocation)) {
-                    Text("View location", Modifier.padding(horizontal = 10.dp, vertical = 5.dp), style = MaterialTheme.typography.labelMedium, color = Violet40)
+                    Text(tr("View location"), Modifier.padding(horizontal = 10.dp, vertical = 5.dp), style = MaterialTheme.typography.labelMedium, color = Violet40)
                 }
             }
         }
@@ -595,7 +596,7 @@ private fun JobDetailContent(job: JobPosting, isSaved: Boolean, onSaveToggle: ()
         Spacer(Modifier.height(14.dp))
         Text(job.blurb, style = MaterialTheme.typography.bodyLarge)
         Spacer(Modifier.height(16.dp))
-        Text("Requirements", style = MaterialTheme.typography.titleSmall)
+        Text(tr("Requirements"), style = MaterialTheme.typography.titleSmall)
         Spacer(Modifier.height(8.dp))
         TagRow(job.tags, Violet40)
         Spacer(Modifier.height(12.dp))
@@ -630,7 +631,7 @@ private fun StudentDetailContent(student: StudentProfile, isSaved: Boolean, onSa
         Spacer(Modifier.height(14.dp))
         Text(student.blurb, style = MaterialTheme.typography.bodyLarge)
         Spacer(Modifier.height(16.dp))
-        Text("Skills", style = MaterialTheme.typography.titleSmall)
+        Text(tr("Skills"), style = MaterialTheme.typography.titleSmall)
         Spacer(Modifier.height(8.dp))
         TagRow(student.skills, Mint20)
         Spacer(Modifier.height(12.dp))
@@ -702,10 +703,10 @@ private fun CompanyDiscoverContent(
                 verticalAlignment = Alignment.Top
             ) {
                 Column {
-                    Text("Find your\nnext hire", style = MaterialTheme.typography.headlineMedium)
+                    Text(tr("Find your\nnext hire"), style = MaterialTheme.typography.headlineMedium)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Swipe right to invite, left to pass.",
+                        tr("Swipe right to shortlist, left to pass."),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -726,7 +727,7 @@ private fun CompanyDiscoverContent(
                     selected = savedOnly,
                     onClick = { savedOnly = !savedOnly },
                     leadingIcon = { Icon(Icons.Filled.Bookmark, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                    label = { Text("Saved (${savedIds.size})") }
+                    label = { Text("${tr("Saved")} (${savedIds.size})") }
                 )
             }
 

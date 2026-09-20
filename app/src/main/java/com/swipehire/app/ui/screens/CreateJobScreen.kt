@@ -40,6 +40,7 @@ import com.swipehire.app.data.RemoteType
 import com.swipehire.app.data.currentFirebaseUserId
 import com.swipehire.app.data.remote.CreateJobPostingDto
 import com.swipehire.app.data.repository.AppRepository
+import com.swipehire.app.ui.tr
 import kotlinx.coroutines.launch
 
 @Composable
@@ -68,7 +69,7 @@ fun CreateJobScreen(onBack: () -> Unit, onPublished: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create job") },
+                title = { Text(tr("Create job")) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -81,30 +82,30 @@ fun CreateJobScreen(onBack: () -> Unit, onPublished: () -> Unit) {
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Publish a role with a verified map location", style = MaterialTheme.typography.titleLarge)
+            Text(tr("Publish a role with a verified map location"), style = MaterialTheme.typography.titleLarge)
             Text(
                 "SwipeHire geocodes the work address through the custom REST API, stores the coordinates, and uses them for maps, directions, and nearby-job distances.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            OutlinedTextField(company, {}, Modifier.fillMaxWidth(), label = { Text("Company") }, singleLine = true, readOnly = true)
-            OutlinedTextField(role, { role = it }, Modifier.fillMaxWidth(), label = { Text("Job title") }, singleLine = true)
+            OutlinedTextField(company, {}, Modifier.fillMaxWidth(), label = { Text(tr("Company")) }, singleLine = true, readOnly = true)
+            OutlinedTextField(role, { role = it }, Modifier.fillMaxWidth(), label = { Text(tr("Job title")) }, singleLine = true)
             OutlinedTextField(location, { location = it }, Modifier.fillMaxWidth(), label = { Text("Area, city") }, placeholder = { Text("Sandton, Johannesburg") }, singleLine = true)
             OutlinedTextField(
                 address,
                 { address = it },
                 Modifier.fillMaxWidth(),
-                label = { Text("Work address") },
+                label = { Text(tr("Work address")) },
                 placeholder = { Text("123 Rivonia Road, Sandton") },
                 leadingIcon = { Icon(Icons.Filled.LocationOn, contentDescription = null) },
                 singleLine = true
             )
-            OutlinedTextField(salary, { salary = it }, Modifier.fillMaxWidth(), label = { Text("Salary range") }, placeholder = { Text("R18k - R24k / month") }, singleLine = true)
-            OutlinedTextField(tags, { tags = it }, Modifier.fillMaxWidth(), label = { Text("Required skills") }, placeholder = { Text("Kotlin, Android, REST APIs") })
-            OutlinedTextField(description, { description = it }, Modifier.fillMaxWidth(), label = { Text("Description") }, minLines = 3)
+            OutlinedTextField(salary, { salary = it }, Modifier.fillMaxWidth(), label = { Text(tr("Salary range")) }, placeholder = { Text("R18k - R24k / month") }, singleLine = true)
+            OutlinedTextField(tags, { tags = it }, Modifier.fillMaxWidth(), label = { Text(tr("Required skills")) }, placeholder = { Text("Kotlin, Android, REST APIs") })
+            OutlinedTextField(description, { description = it }, Modifier.fillMaxWidth(), label = { Text(tr("Description")) }, minLines = 3)
 
-            Text("Work arrangement", style = MaterialTheme.typography.labelLarge)
+            Text(tr("Work arrangement"), style = MaterialTheme.typography.labelLarge)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 RemoteType.entries.forEach { type ->
                     FilterChip(
@@ -155,7 +156,7 @@ fun CreateJobScreen(onBack: () -> Unit, onPublished: () -> Unit) {
                 shape = RoundedCornerShape(16.dp)
             ) {
                 if (isSaving) CircularProgressIndicator(strokeWidth = 2.dp)
-                else Text("Geocode and publish")
+                else Text(tr("Geocode and publish"))
             }
         }
     }

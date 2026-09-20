@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.swipehire.app.data.AccountType
+import com.swipehire.app.data.AppLanguage
 import com.swipehire.app.data.SettingsRepository
 import com.swipehire.app.data.SettingsState
 import com.swipehire.app.data.currentFirebaseUserId
@@ -30,7 +31,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             pushNotifications = remote.pushNotifications,
             matchAlerts = remote.matchAlerts,
             messageAlerts = remote.messageAlerts,
-            profileVisible = remote.profileVisible
+            profileVisible = remote.profileVisible,
+            language = local.language
         )
     }.stateIn(
         scope = viewModelScope,
@@ -45,7 +47,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun refreshSession() = viewModelScope.launch {
         val userId = currentFirebaseUserId() ?: return@launch
         remoteAccountType.value = appRepository.getAccountType(userId)
-        appRepository.getUserSettings(userId)?.let { remoteSettings.value = it }
+        appRepository.getUserSettings(userId)?.let {
+            remoteSettings.value = it
+            localRepository.setLanguage(AppLanguage.fromCode(it.language))
+        }
     }
 
     fun chooseAccountType(type: AccountType, onSaved: (Boolean) -> Unit = {}) = viewModelScope.launch {
@@ -75,6 +80,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         localRepository.setOnboarded(false)
     }
     fun setThemeMode(mode: ThemeMode) = viewModelScope.launch { localRepository.setThemeMode(mode) }
+    fun setLanguage(language: AppLanguage) = viewModelScope.launch {
+        localRepository.setLanguage(language)
+        val userId = currentFirebaseUserId() ?: return@launch
+        val previous = remoteSettings.value
+        val updated = previous.copy(language = language.code)
+        remoteSettings.value = updated
+        if (appRepository.updateUserSettings(userId, updated) == null) remoteSettings.value = previous
+    }
     fun setBiometricLock(enabled: Boolean) = viewModelScope.launch { localRepository.setBiometricLock(enabled) }
     fun setOnboarded(done: Boolean) = viewModelScope.launch { localRepository.setOnboarded(done) }
 

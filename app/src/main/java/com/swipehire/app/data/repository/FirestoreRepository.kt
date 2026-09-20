@@ -1,16 +1,21 @@
 package com.swipehire.app.data.repository
 
+import android.net.Uri
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.storage.FirebaseStorage
 import com.swipehire.app.data.AccountType
+import com.swipehire.app.data.AlertType
+import com.swipehire.app.data.AppAlert
 import com.swipehire.app.data.ChatMessage
 import com.swipehire.app.data.CompanyProfile
 import com.swipehire.app.data.JobPosting
 import com.swipehire.app.data.MatchChat
+import com.swipehire.app.data.MessageDeliveryState
 import com.swipehire.app.data.StudentProfile
 import com.swipehire.app.data.remote.ChatMessageDto
 import com.swipehire.app.data.remote.CompanyProfileDto
@@ -19,6 +24,7 @@ import com.swipehire.app.data.remote.CreateJobPostingDto
 import com.swipehire.app.data.remote.CreateStudentDto
 import com.swipehire.app.data.remote.JobPostingDto
 import com.swipehire.app.data.remote.MatchDto
+import com.swipehire.app.data.remote.NotificationDto
 import com.swipehire.app.data.remote.ProfileResponseDto
 import com.swipehire.app.data.remote.SavedItemsDto
 import com.swipehire.app.data.remote.StudentProfileDto
@@ -36,7 +42,9 @@ class FirestoreRepository {
 
     suspend fun getJobPostings(): List<JobPosting> = try {
         db?.collection("jobs")?.get()?.await()?.documents
-            ?.mapNotNull { it.toObject(JobPostingDto::class.java)?.toDomain() }
+            ?.mapNotNull { it.toObject(JobPostingDto::class.java) }
+            ?.filter { it.profileVisible }
+            ?.map { it.toDomain() }
             ?.filter { it.companyId.isNotBlank() }.orEmpty()
     } catch (_: Exception) { emptyList() }
 
@@ -48,7 +56,9 @@ class FirestoreRepository {
     suspend fun getStudentProfiles(): List<StudentProfile> = try {
         db?.collection("students")?.get()?.await()?.documents
             ?.filter { it.getString("userId") == it.id }
-            ?.mapNotNull { it.toObject(StudentProfileDto::class.java)?.toDomain() }.orEmpty()
+            ?.mapNotNull { it.toObject(StudentProfileDto::class.java) }
+            ?.filter { it.profileVisible }
+            ?.map { it.toDomain() }.orEmpty()
     } catch (_: Exception) { emptyList() }
 
     suspend fun getStudentProfile(userId: String): StudentProfile? = try {
@@ -122,7 +132,10 @@ class FirestoreRepository {
                 ?: company?.let { "${it.industry} · ${it.location}" }.orEmpty(),
             avatarInitials = student?.avatarInitials ?: company?.logoInitials ?: "SH",
             lastMessage = dto.lastMessage.ifBlank { "You matched — start the conversation!" },
-            unread = userId in dto.unreadBy
+            unread = userId in dto.unreadBy,
+            otherUserId = otherId,
+            studentCvPath = student?.cvPath.orEmpty(),
+            studentCvFileName = student?.cvFileName.orEmpty()
         )
     }
 
@@ -142,11 +155,39 @@ class FirestoreRepository {
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) { trySend(emptyList()); return@addSnapshotListener }
-                trySend(snapshot?.documents?.mapNotNull { doc ->
+                val documents = snapshot?.documents.orEmpty()
+                trySend(documents.mapNotNull { doc ->
                     doc.toObject(ChatMessageDto::class.java)?.let {
-                        ChatMessage(it.id, it.text, it.senderId == currentUserId)
+                        val fromMe = it.senderId == currentUserId
+                        val deliveryState = when {
+                            !fromMe -> MessageDeliveryState.READ
+                            doc.metadata.hasPendingWrites() -> MessageDeliveryState.SENDING
+                            it.readBy.any { readerId -> readerId != currentUserId } -> MessageDeliveryState.READ
+                            else -> MessageDeliveryState.SENT
+                        }
+                        ChatMessage(
+                            id = it.id,
+                            text = it.text,
+                            fromMe = fromMe,
+                            sentAtMillis = it.timestamp?.toDate()?.time ?: System.currentTimeMillis(),
+                            deliveryState = deliveryState
+                        )
                     }
-                }.orEmpty())
+                })
+
+                val unreadMessages = documents.filter { document ->
+                    document.getString("senderId") != currentUserId &&
+                        currentUserId !in (document.get("readBy") as? List<*>)?.filterIsInstance<String>().orEmpty()
+                }
+                if (unreadMessages.isNotEmpty()) {
+                    launch {
+                        val batch = firestore.batch()
+                        unreadMessages.forEach { document ->
+                            batch.update(document.reference, "readBy", FieldValue.arrayUnion(currentUserId))
+                        }
+                        runCatching { batch.commit().await() }
+                    }
+                }
             }
         awaitClose { listener.remove() }
     }
@@ -159,15 +200,166 @@ class FirestoreRepository {
             val participants = (snapshot.get("participantIds") as? List<*>)?.filterIsInstance<String>().orEmpty()
             if (snapshot.getBoolean("mutual") != true || senderId !in participants) return false
             matchRef.collection("messages").add(
-                mapOf("senderId" to senderId, "text" to text.trim(), "timestamp" to Timestamp.now())
+                mapOf(
+                    "senderId" to senderId,
+                    "text" to text.trim(),
+                    "timestamp" to FieldValue.serverTimestamp(),
+                    "readBy" to listOf(senderId)
+                )
             ).await()
             val recipients = participants.filter { it != senderId }
             matchRef.set(
                 mapOf("lastMessage" to text.trim(), "unreadBy" to recipients, "updatedAt" to FieldValue.serverTimestamp()),
                 SetOptions.merge()
             ).await()
+            val senderName = getStudentProfile(senderId)?.name
+                ?: getCompanyProfile(senderId)?.name
+                ?: "SwipeHire user"
+            recipients.forEach { recipientId ->
+                createNotification(
+                    userId = recipientId,
+                    actorId = senderId,
+                    type = AlertType.MESSAGE,
+                    title = "New message from $senderName",
+                    body = text.trim(),
+                    matchId = matchId
+                )
+            }
             true
         } catch (_: Exception) { false }
+    }
+
+    fun getAlerts(userId: String): Flow<List<AppAlert>> = callbackFlow {
+        val firestore = db
+        if (firestore == null) { trySend(emptyList()); close(); return@callbackFlow }
+        val listener = firestore.collection("notifications")
+            .whereEqualTo("userId", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) { trySend(emptyList()); return@addSnapshotListener }
+                val alerts = snapshot?.documents.orEmpty().mapNotNull { document ->
+                    document.toObject(NotificationDto::class.java)?.let { notification ->
+                        AppAlert(
+                            id = document.id,
+                            type = runCatching { AlertType.valueOf(notification.type) }.getOrDefault(AlertType.MESSAGE),
+                            title = notification.title,
+                            body = notification.body,
+                            matchId = notification.matchId,
+                            actorId = notification.actorId,
+                            createdAtMillis = notification.createdAt?.toDate()?.time ?: System.currentTimeMillis(),
+                            isRead = notification.read
+                        )
+                    }
+                }.sortedByDescending { it.createdAtMillis }
+                trySend(alerts)
+            }
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun markAlertRead(userId: String, alertId: String): Boolean {
+        return try {
+            val reference = db?.collection("notifications")?.document(alertId) ?: return false
+            val snapshot = reference.get().await()
+            if (snapshot.getString("userId") != userId) return false
+            reference.update("read", true).await()
+            true
+        } catch (_: Exception) { false }
+    }
+
+    private suspend fun createNotification(
+        userId: String,
+        actorId: String,
+        type: AlertType,
+        title: String,
+        body: String,
+        matchId: String,
+        stableId: String? = null
+    ) {
+        val firestore = db ?: return
+        val reference = stableId?.let { firestore.collection("notifications").document(it) }
+            ?: firestore.collection("notifications").document()
+        reference.set(
+            mapOf(
+                "userId" to userId,
+                "actorId" to actorId,
+                "type" to type.name,
+                "title" to title,
+                "body" to body,
+                "matchId" to matchId,
+                "createdAt" to FieldValue.serverTimestamp(),
+                "read" to false
+            ),
+            SetOptions.merge()
+        ).await()
+    }
+
+    suspend fun uploadStudentCv(userId: String, uri: Uri, fileName: String): Pair<String, String>? {
+        return try {
+            val safeName = fileName.replace(Regex("[^A-Za-z0-9._-]"), "_").ifBlank { "cv.pdf" }
+            val path = "cvs/$userId/${System.currentTimeMillis()}_$safeName"
+            FirebaseStorage.getInstance().reference.child(path).putFile(uri).await()
+            db?.collection("students")?.document(userId)?.set(
+                mapOf(
+                    "userId" to userId,
+                    "cvPath" to path,
+                    "cvFileName" to fileName,
+                    "updatedAt" to FieldValue.serverTimestamp()
+                ),
+                SetOptions.merge()
+            )?.await()
+            val firestore = db ?: return null
+            val matches = firestore.collection("matches")
+                .whereArrayContains("participantIds", userId).get().await().documents
+            matches.filter { it.getBoolean("mutual") == true }.forEach { match ->
+                val participants = (match.get("participantIds") as? List<*>)?.filterIsInstance<String>().orEmpty()
+                val companyId = participants.firstOrNull { it != userId } ?: return@forEach
+                firestore.collection("cvAccess").document(userId).collection("companies").document(companyId).set(
+                    mapOf(
+                        "studentId" to userId,
+                        "companyId" to companyId,
+                        "matchId" to match.id,
+                        "createdAt" to FieldValue.serverTimestamp()
+                    ),
+                    SetOptions.merge()
+                ).await()
+            }
+            path to fileName
+        } catch (_: Exception) { null }
+    }
+
+    suspend fun getCvDownloadUrl(path: String): Uri? = try {
+        FirebaseStorage.getInstance().reference.child(path).downloadUrl.await()
+    } catch (_: Exception) { null }
+
+    suspend fun getIncomingInterestCount(userId: String): Int = try {
+        db?.collection("swipes")?.whereEqualTo("targetUserId", userId)?.get()?.await()?.documents
+            ?.count { it.getBoolean("isLike") == true } ?: 0
+    } catch (_: Exception) { 0 }
+
+    suspend fun getAverageReplyTimeMillis(userId: String): Long? {
+        val firestore = db ?: return null
+        return try {
+            val matches = firestore.collection("matches")
+                .whereArrayContains("participantIds", userId).get().await().documents
+            val responseTimes = mutableListOf<Long>()
+            for (match in matches) {
+                val messages = match.reference.collection("messages")
+                    .orderBy("timestamp", Query.Direction.ASCENDING).get().await().documents
+                var waitingSince: Long? = null
+                messages.forEach { message ->
+                    val senderId = message.getString("senderId").orEmpty()
+                    val timestamp = message.getTimestamp("timestamp")?.toDate()?.time ?: return@forEach
+                    if (senderId == userId) {
+                        waitingSince?.let { receivedAt ->
+                            if (timestamp >= receivedAt) responseTimes += timestamp - receivedAt
+                        }
+                        waitingSince = null
+                    } else if (waitingSince == null) {
+                        waitingSince = timestamp
+                    }
+                }
+            }
+            responseTimes.takeIf { it.isNotEmpty() }?.average()?.toLong()
+        } catch (_: Exception) { null }
     }
 
     suspend fun getSavedItems(userId: String): SavedItemsDto? {
@@ -197,33 +389,56 @@ class FirestoreRepository {
                 settings["pushNotifications"] as? Boolean ?: true,
                 settings["matchAlerts"] as? Boolean ?: true,
                 settings["messageAlerts"] as? Boolean ?: true,
-                settings["profileVisible"] as? Boolean ?: true
+                settings["profileVisible"] as? Boolean ?: true,
+                settings["language"] as? String ?: "en"
             )
         } catch (_: Exception) { null }
     }
 
-    suspend fun updateUserSettings(userId: String, settings: UserSettingsDto): UserSettingsDto? = try {
-        val values = mapOf(
+    suspend fun updateUserSettings(userId: String, settings: UserSettingsDto): UserSettingsDto? {
+        return try {
+            val values = mapOf(
             "pushNotifications" to settings.pushNotifications,
             "matchAlerts" to settings.matchAlerts,
             "messageAlerts" to settings.messageAlerts,
-            "profileVisible" to settings.profileVisible
+            "profileVisible" to settings.profileVisible,
+            "language" to settings.language
         )
-        db?.collection("users")?.document(userId)?.set(
+            val firestore = db ?: return null
+        firestore.collection("users").document(userId).set(
             mapOf("settings" to values, "updatedAt" to FieldValue.serverTimestamp()), SetOptions.merge()
-        )?.await()
-        settings
-    } catch (_: Exception) { null }
+        ).await()
+        val role = firestore.collection("users").document(userId).get().await().getString("role")
+        if (role == AccountType.STUDENT.name) {
+            firestore.collection("students").document(userId).set(
+                mapOf("profileVisible" to settings.profileVisible), SetOptions.merge()
+            ).await()
+        } else if (role == AccountType.COMPANY.name) {
+            firestore.collection("companies").document(userId).set(
+                mapOf("profileVisible" to settings.profileVisible), SetOptions.merge()
+            ).await()
+            val jobs = firestore.collection("jobs").whereEqualTo("companyId", userId).get().await()
+            if (!jobs.isEmpty) {
+                val batch = firestore.batch()
+                jobs.documents.forEach { batch.update(it.reference, "profileVisible", settings.profileVisible) }
+                batch.commit().await()
+            }
+        }
+            settings
+        } catch (_: Exception) { null }
+    }
 
     suspend fun createJob(job: CreateJobPostingDto): ProfileResponseDto? {
         return try {
             val document = db?.collection("jobs")?.document() ?: return null
+            val visible = getUserSettings(job.companyId)?.profileVisible ?: true
             document.set(mapOf(
                 "companyId" to job.companyId, "company" to job.company, "role" to job.role,
                 "location" to job.location, "workAddress" to job.workAddress,
                 "latitude" to job.latitude, "longitude" to job.longitude, "tags" to job.tags,
                 "blurb" to job.blurb, "logoInitials" to job.logoInitials,
                 "remoteType" to job.remoteType, "salaryRange" to job.salaryRange,
+                "profileVisible" to visible,
                 "createdAt" to FieldValue.serverTimestamp()
             )).await()
             ProfileResponseDto(document.id, "Job posting created successfully.", true)
@@ -316,9 +531,46 @@ class FirestoreRepository {
                     "lastMessage" to "You matched — start the conversation!",
                     "unreadBy" to listOf(targetUserId), "createdAt" to FieldValue.serverTimestamp()
                 )).await()
+                grantCvAccessForMatch(participants, matchId)
+                participants.forEach { recipientId ->
+                    val otherId = participants.first { it != recipientId }
+                    val otherName = getStudentProfile(otherId)?.name
+                        ?: getCompanyProfile(otherId)?.name
+                        ?: "SwipeHire user"
+                    createNotification(
+                        userId = recipientId,
+                        actorId = otherId,
+                        type = AlertType.MATCH,
+                        title = "New match",
+                        body = "You matched with $otherName.",
+                        matchId = matchId,
+                        stableId = "${matchId}_$recipientId"
+                    )
+                }
             }
             SwipeResponse(true, matchId)
         } catch (_: Exception) { null }
+    }
+
+    private suspend fun grantCvAccessForMatch(participants: List<String>, matchId: String) {
+        val firestore = db ?: return
+        var studentId: String? = null
+        for (participantId in participants) {
+            if (firestore.collection("students").document(participantId).get().await().exists()) {
+                studentId = participantId
+                break
+            }
+        }
+        val resolvedStudentId = studentId ?: return
+        val companyId = participants.firstOrNull { it != resolvedStudentId } ?: return
+        firestore.collection("cvAccess").document(resolvedStudentId).collection("companies").document(companyId).set(
+            mapOf(
+                "studentId" to resolvedStudentId,
+                "companyId" to companyId,
+                "matchId" to matchId,
+                "createdAt" to FieldValue.serverTimestamp()
+            )
+        ).await()
     }
 
     suspend fun deleteSwipe(userId: String, targetId: String, targetUserId: String): Boolean {

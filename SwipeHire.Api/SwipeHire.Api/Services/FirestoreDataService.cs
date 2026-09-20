@@ -10,9 +10,13 @@ namespace SwipeHire.Api.Services;
 public sealed class FirestoreDataService
 {
     private readonly Lazy<FirestoreDb> _database;
+    private readonly ILogger<FirestoreDataService> _logger;
 
-    public FirestoreDataService(IConfiguration configuration)
+    public FirestoreDataService(
+        IConfiguration configuration,
+        ILogger<FirestoreDataService> logger)
     {
+        _logger = logger;
         var projectId = configuration["Firebase:ProjectId"];
         if (string.IsNullOrWhiteSpace(projectId))
             throw new InvalidOperationException("Firebase:ProjectId must be configured.");
@@ -37,7 +41,9 @@ public sealed class FirestoreDataService
         {
             var snapshot = await Database.Collection("jobs").GetSnapshotAsync(cancellationToken);
             return snapshot.Documents
-                .Select(document => document.ConvertTo<FirestoreJobDocument>().ToDto(document.Id))
+                .Select(document => (Document: document, Data: document.ConvertTo<FirestoreJobDocument>()))
+                .Where(item => item.Data.ProfileVisible)
+                .Select(item => item.Data.ToDto(item.Document.Id))
                 .Where(job => !string.IsNullOrWhiteSpace(job.CompanyId))
                 .OrderByDescending(job => job.Id)
                 .ToList();
@@ -68,7 +74,10 @@ public sealed class FirestoreDataService
     public async Task<string> CreateJobAsync(CreateJobPostingDto job, CancellationToken cancellationToken)
     {
         var document = Database.Collection("jobs").Document();
-        await document.SetAsync(FirestoreJobDocument.From(job), cancellationToken: cancellationToken);
+        var settings = await GetUserSettingsAsync(job.CompanyId, cancellationToken);
+        var jobDocument = FirestoreJobDocument.From(job);
+        jobDocument.ProfileVisible = settings.ProfileVisible;
+        await document.SetAsync(jobDocument, cancellationToken: cancellationToken);
         return document.Id;
     }
 
@@ -88,7 +97,7 @@ public sealed class FirestoreDataService
             var snapshot = await Database.Collection("students").GetSnapshotAsync(cancellationToken);
             return snapshot.Documents
                 .Select(document => (Document: document, Data: document.ConvertTo<FirestoreStudentDocument>()))
-                .Where(item => item.Data.UserId == item.Document.Id)
+                .Where(item => item.Data.UserId == item.Document.Id && item.Data.ProfileVisible)
                 .Select(item => item.Data.ToDto(item.Document.Id))
                 .OrderBy(student => student.Name)
                 .ToList();
@@ -106,6 +115,7 @@ public sealed class FirestoreDataService
             : Database.Collection("students").Document(id);
         var studentDocument = FirestoreStudentDocument.From(student);
         studentDocument.UserId = document.Id;
+        studentDocument.ProfileVisible = (await GetUserSettingsAsync(document.Id, cancellationToken)).ProfileVisible;
         await document.SetAsync(studentDocument, SetOptions.MergeAll, cancellationToken);
         return document.Id;
     }
@@ -117,6 +127,7 @@ public sealed class FirestoreDataService
             : Database.Collection("companies").Document(id);
         var companyDocument = FirestoreCompanyDocument.From(company);
         companyDocument.UserId = document.Id;
+        companyDocument.ProfileVisible = (await GetUserSettingsAsync(document.Id, cancellationToken)).ProfileVisible;
         await document.SetAsync(companyDocument, SetOptions.MergeAll, cancellationToken);
         return document.Id;
     }
@@ -179,7 +190,94 @@ public sealed class FirestoreDataService
             }, cancellationToken: cancellationToken);
         }
 
+        using var artifactTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        try
+        {
+            await CreateMatchArtifactsAsync(participants, matchId, artifactTimeout.Token);
+        }
+        catch (Exception exception) when (IsExpectedCancellation(exception, artifactTimeout.Token))
+        {
+            _logger.LogWarning(exception, "Timed out creating supporting records for match {MatchId}.", matchId);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "Could not create supporting records for match {MatchId}.", matchId);
+        }
+
         return new SwipeResponse(true, matchId);
+    }
+
+    private async Task CreateMatchArtifactsAsync(
+        IReadOnlyList<string> participants,
+        string matchId,
+        CancellationToken cancellationToken)
+    {
+        string? studentId = null;
+        foreach (var participantId in participants)
+        {
+            if ((await Database.Collection("students").Document(participantId)
+                    .GetSnapshotAsync(cancellationToken)).Exists)
+            {
+                studentId = participantId;
+                break;
+            }
+        }
+
+        if (studentId is not null)
+        {
+            var companyId = participants.FirstOrDefault(id => id != studentId);
+            if (!string.IsNullOrWhiteSpace(companyId))
+            {
+                var accessReference = Database.Collection("cvAccess").Document(studentId)
+                    .Collection("companies").Document(companyId);
+                if (!(await accessReference.GetSnapshotAsync(cancellationToken)).Exists)
+                {
+                    await accessReference.SetAsync(new Dictionary<string, object>
+                    {
+                        ["studentId"] = studentId,
+                        ["companyId"] = companyId,
+                        ["matchId"] = matchId,
+                        ["createdAt"] = FieldValue.ServerTimestamp
+                    }, cancellationToken: cancellationToken);
+                }
+            }
+        }
+
+        foreach (var recipientId in participants)
+        {
+            var otherId = participants.First(id => id != recipientId);
+            var otherName = await GetDisplayNameAsync(otherId, cancellationToken);
+            var notificationReference = Database.Collection("notifications")
+                .Document($"{matchId}_{recipientId}");
+            if (!(await notificationReference.GetSnapshotAsync(cancellationToken)).Exists)
+            {
+                await notificationReference.SetAsync(new Dictionary<string, object>
+                {
+                    ["userId"] = recipientId,
+                    ["actorId"] = otherId,
+                    ["type"] = "MATCH",
+                    ["title"] = "New match",
+                    ["body"] = $"You matched with {otherName}.",
+                    ["matchId"] = matchId,
+                    ["createdAt"] = FieldValue.ServerTimestamp,
+                    ["read"] = false
+                },
+                cancellationToken: cancellationToken);
+            }
+        }
+    }
+
+    private async Task<string> GetDisplayNameAsync(string userId, CancellationToken cancellationToken)
+    {
+        var student = await Database.Collection("students").Document(userId).GetSnapshotAsync(cancellationToken);
+        if (student.Exists && student.TryGetValue<string>("name", out var studentName) &&
+            !string.IsNullOrWhiteSpace(studentName)) return studentName;
+
+        var company = await Database.Collection("companies").Document(userId).GetSnapshotAsync(cancellationToken);
+        return company.Exists && company.TryGetValue<string>("name", out var companyName) &&
+               !string.IsNullOrWhiteSpace(companyName)
+            ? companyName
+            : "SwipeHire user";
     }
 
     public async Task<IReadOnlyList<string>> GetSwipedTargetIdsAsync(
@@ -301,7 +399,8 @@ public sealed class FirestoreDataService
                 ReadBoolean(settings, "pushNotifications", true),
                 ReadBoolean(settings, "matchAlerts", true),
                 ReadBoolean(settings, "messageAlerts", true),
-                ReadBoolean(settings, "profileVisible", true)
+                ReadBoolean(settings, "profileVisible", true),
+                settings.TryGetValue("language", out var language) ? language?.ToString() ?? "en" : "en"
             );
         }
         catch (Exception exception) when (IsExpectedCancellation(exception, cancellationToken))
@@ -322,10 +421,35 @@ public sealed class FirestoreDataService
                 ["pushNotifications"] = settings.PushNotifications,
                 ["matchAlerts"] = settings.MatchAlerts,
                 ["messageAlerts"] = settings.MessageAlerts,
-                ["profileVisible"] = settings.ProfileVisible
+                ["profileVisible"] = settings.ProfileVisible,
+                ["language"] = settings.Language
             },
             ["updatedAt"] = FieldValue.ServerTimestamp
         }, SetOptions.MergeAll, cancellationToken);
+
+        var userSnapshot = await Database.Collection("users").Document(userId).GetSnapshotAsync(cancellationToken);
+        var role = userSnapshot.Exists && userSnapshot.TryGetValue<string>("role", out var storedRole) ? storedRole : "";
+        if (string.Equals(role, "STUDENT", StringComparison.OrdinalIgnoreCase))
+        {
+            await Database.Collection("students").Document(userId).SetAsync(
+                new Dictionary<string, object> { ["profileVisible"] = settings.ProfileVisible },
+                SetOptions.MergeAll,
+                cancellationToken
+            );
+        }
+        else if (string.Equals(role, "COMPANY", StringComparison.OrdinalIgnoreCase))
+        {
+            await Database.Collection("companies").Document(userId).SetAsync(
+                new Dictionary<string, object> { ["profileVisible"] = settings.ProfileVisible },
+                SetOptions.MergeAll,
+                cancellationToken
+            );
+            var jobs = await Database.Collection("jobs").WhereEqualTo("companyId", userId).GetSnapshotAsync(cancellationToken);
+            var batch = Database.StartBatch();
+            foreach (var job in jobs.Documents)
+                batch.Update(job.Reference, "profileVisible", settings.ProfileVisible);
+            if (jobs.Count > 0) await batch.CommitAsync(cancellationToken);
+        }
         return settings;
     }
 
@@ -368,6 +492,7 @@ public sealed class FirestoreJobDocument
     [FirestoreProperty("logoInitials")] public string LogoInitials { get; set; } = "";
     [FirestoreProperty("remoteType")] public string RemoteType { get; set; } = "ON_SITE";
     [FirestoreProperty("salaryRange")] public string SalaryRange { get; set; } = "";
+    [FirestoreProperty("profileVisible")] public bool ProfileVisible { get; set; } = true;
     [FirestoreProperty("createdAt")] public Timestamp? CreatedAt { get; set; }
 
     public JobPostingDto ToDto(string id) => new()
@@ -415,6 +540,7 @@ public sealed class FirestoreStudentDocument
     [FirestoreProperty("skills")] public List<string> Skills { get; set; } = [];
     [FirestoreProperty("blurb")] public string Blurb { get; set; } = "";
     [FirestoreProperty("avatarInitials")] public string AvatarInitials { get; set; } = "";
+    [FirestoreProperty("profileVisible")] public bool ProfileVisible { get; set; } = true;
     [FirestoreProperty("updatedAt")] public Timestamp? UpdatedAt { get; set; }
 
     public StudentProfileDto ToDto(string id) => new()
@@ -450,6 +576,7 @@ public sealed class FirestoreCompanyDocument
     [FirestoreProperty("description")] public string Description { get; set; } = "";
     [FirestoreProperty("logoInitials")] public string LogoInitials { get; set; } = "";
     [FirestoreProperty("hiringFor")] public List<string> HiringFor { get; set; } = [];
+    [FirestoreProperty("profileVisible")] public bool ProfileVisible { get; set; } = true;
     [FirestoreProperty("updatedAt")] public Timestamp? UpdatedAt { get; set; }
 
     public static FirestoreCompanyDocument From(CreateCompanyDto company) => new()

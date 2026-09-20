@@ -86,6 +86,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-auth-ktx") // Useful for current user context
+    implementation("com.google.firebase:firebase-storage-ktx")
 
     // Modern Sign in with Google flow recommended by Firebase.
     implementation("androidx.credentials:credentials:1.3.0")

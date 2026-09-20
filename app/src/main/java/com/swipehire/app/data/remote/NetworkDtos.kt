@@ -50,5 +50,6 @@ data class UserSettingsDto(
     val pushNotifications: Boolean = true,
     val matchAlerts: Boolean = true,
     val messageAlerts: Boolean = true,
-    val profileVisible: Boolean = true
+    val profileVisible: Boolean = true,
+    val language: String = "en"
 )

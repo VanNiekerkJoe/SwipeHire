@@ -21,7 +21,8 @@ data class JobPostingDto(
     val blurb: String = "",
     val logoInitials: String = "",
     val remoteType: String = "ON_SITE",
-    val salaryRange: String = ""
+    val salaryRange: String = "",
+    val profileVisible: Boolean = true
 ) {
     fun toDomain(matchedSkills: List<String> = emptyList()): JobPosting {
         return JobPosting(
@@ -51,7 +52,10 @@ data class StudentProfileDto(
     val year: String = "",
     val skills: List<String> = emptyList(),
     val blurb: String = "",
-    val avatarInitials: String = ""
+    val avatarInitials: String = "",
+    val cvPath: String = "",
+    val cvFileName: String = "",
+    val profileVisible: Boolean = true
 ) {
     fun toDomain(matchedSkills: List<String> = emptyList()): StudentProfile {
         return StudentProfile(
@@ -62,7 +66,9 @@ data class StudentProfileDto(
             skills = skills,
             blurb = blurb,
             avatarInitials = avatarInitials,
-            matchedSkills = matchedSkills
+            matchedSkills = matchedSkills,
+            cvPath = cvPath,
+            cvFileName = cvFileName
         )
     }
 }
@@ -97,5 +103,18 @@ data class ChatMessageDto(
     @DocumentId val id: String = "",
     val senderId: String = "",
     val text: String = "",
-    val timestamp: Timestamp = Timestamp.now()
+    val timestamp: Timestamp? = null,
+    val readBy: List<String> = emptyList()
+)
+
+data class NotificationDto(
+    @DocumentId val id: String = "",
+    val userId: String = "",
+    val actorId: String = "",
+    val type: String = "MESSAGE",
+    val title: String = "",
+    val body: String = "",
+    val matchId: String = "",
+    val createdAt: Timestamp? = null,
+    val read: Boolean = false
 )

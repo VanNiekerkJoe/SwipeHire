@@ -1,5 +1,7 @@
 package com.swipehire.app.data.repository
 
+import android.net.Uri
+import com.swipehire.app.data.AppAlert
 import com.swipehire.app.data.ChatMessage
 import com.swipehire.app.data.AccountType
 import com.swipehire.app.data.CompanyProfile
@@ -51,6 +53,11 @@ class AppRepository {
 
     fun getMatches(userId: String): Flow<List<MatchChat>> = firestoreRepository.getMatches(userId)
 
+    fun getAlerts(userId: String): Flow<List<AppAlert>> = firestoreRepository.getAlerts(userId)
+
+    suspend fun markAlertRead(userId: String, alertId: String): Boolean =
+        firestoreRepository.markAlertRead(userId, alertId)
+
     suspend fun getMatch(matchId: String, userId: String): MatchChat? =
         firestoreRepository.getMatch(matchId, userId)
 
@@ -59,6 +66,17 @@ class AppRepository {
 
     suspend fun sendMessage(matchId: String, senderId: String, text: String): Boolean =
         firestoreRepository.sendMessage(matchId, senderId, text)
+
+    suspend fun uploadStudentCv(userId: String, uri: Uri, fileName: String): Pair<String, String>? =
+        firestoreRepository.uploadStudentCv(userId, uri, fileName)
+
+    suspend fun getCvDownloadUrl(path: String): Uri? = firestoreRepository.getCvDownloadUrl(path)
+
+    suspend fun getIncomingInterestCount(userId: String): Int =
+        firestoreRepository.getIncomingInterestCount(userId)
+
+    suspend fun getAverageReplyTimeMillis(userId: String): Long? =
+        firestoreRepository.getAverageReplyTimeMillis(userId)
 
     // --- REST API: GET Feed Endpoints ---
 

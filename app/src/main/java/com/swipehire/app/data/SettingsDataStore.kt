@@ -18,6 +18,7 @@ data class SettingsState(
     val matchAlerts: Boolean = true,
     val messageAlerts: Boolean = true,
     val profileVisible: Boolean = true,
+    val language: AppLanguage = AppLanguage.ENGLISH,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val biometricLock: Boolean = false,
     val onboarded: Boolean = false
@@ -25,6 +26,7 @@ data class SettingsState(
 
 private object Keys {
     val THEME_MODE = stringPreferencesKey("theme_mode")
+    val LANGUAGE = stringPreferencesKey("language")
     val BIOMETRIC = booleanPreferencesKey("biometric_lock")
     val ONBOARDED = booleanPreferencesKey("onboarded")
 }
@@ -33,6 +35,7 @@ class SettingsRepository(private val context: Context) {
 
     val state: Flow<SettingsState> = context.settingsStore.data.map { prefs ->
         SettingsState(
+            language = AppLanguage.fromCode(prefs[Keys.LANGUAGE]),
             themeMode = prefs[Keys.THEME_MODE]?.let { ThemeMode.valueOf(it) } ?: ThemeMode.SYSTEM,
             biometricLock = prefs[Keys.BIOMETRIC] ?: false,
             onboarded = prefs[Keys.ONBOARDED] ?: false
@@ -41,6 +44,10 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setThemeMode(mode: ThemeMode) {
         context.settingsStore.edit { it[Keys.THEME_MODE] = mode.name }
+    }
+
+    suspend fun setLanguage(language: AppLanguage) {
+        context.settingsStore.edit { it[Keys.LANGUAGE] = language.code }
     }
 
     suspend fun setBiometricLock(enabled: Boolean) {

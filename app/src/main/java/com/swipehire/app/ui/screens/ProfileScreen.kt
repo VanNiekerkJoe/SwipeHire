@@ -1,6 +1,7 @@
 package com.swipehire.app.ui.screens
 
 import android.content.Intent
+import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -36,6 +37,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -72,6 +74,7 @@ import com.swipehire.app.ui.theme.Mint40
 import com.swipehire.app.ui.theme.Violet20
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.glow
+import com.swipehire.app.ui.tr
 import com.swipehire.app.util.calculateProfileStrength
 import kotlinx.coroutines.launch
 
@@ -92,11 +95,15 @@ fun ProfileScreen(
     var detail by rememberSaveable { mutableStateOf("") }
     var skillsText by rememberSaveable { mutableStateOf("") }
     var about by rememberSaveable { mutableStateOf("") }
-    var cvUri by rememberSaveable { mutableStateOf<String?>(null) }
+    var cvPath by rememberSaveable { mutableStateOf("") }
+    var cvFileName by rememberSaveable { mutableStateOf("") }
+    var cvUploading by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
     var saveMessage by remember { mutableStateOf<String?>(null) }
     var companyJobs by remember { mutableStateOf<List<JobPosting>>(emptyList()) }
     var matchCount by remember { mutableStateOf(0) }
+    var interestCount by remember { mutableStateOf(0) }
+    var averageReplyMillis by remember { mutableStateOf<Long?>(null) }
 
     val cvLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -105,7 +112,25 @@ fun ProfileScreen(
             } catch (_: SecurityException) {
                 // Some document providers do not expose persistable permissions; the URI is still usable now.
             }
-            cvUri = uri.toString()
+            val selectedName = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+                ?.use { cursor ->
+                    if (cursor.moveToFirst()) cursor.getString(0) else null
+                } ?: "cv.pdf"
+            val ownerId = profileId
+            if (ownerId != null) {
+                scope.launch {
+                    cvUploading = true
+                    val uploaded = repository.uploadStudentCv(ownerId, uri, selectedName)
+                    cvUploading = false
+                    if (uploaded != null) {
+                        cvPath = uploaded.first
+                        cvFileName = uploaded.second
+                        saveMessage = "CV uploaded securely."
+                    } else {
+                        saveMessage = "CV upload failed. Check Firebase Storage and try again."
+                    }
+                }
+            }
         }
     }
 
@@ -119,7 +144,11 @@ fun ProfileScreen(
                 detail = student.year
                 skillsText = student.skills.joinToString(", ")
                 about = student.blurb
+                cvPath = student.cvPath
+                cvFileName = student.cvFileName
             }
+            interestCount = repository.getIncomingInterestCount(profileId)
+            averageReplyMillis = repository.getAverageReplyTimeMillis(profileId)
         } else {
             repository.getCompanyProfile(profileId)?.let { company ->
                 name = company.name
@@ -139,7 +168,7 @@ fun ProfileScreen(
     val skills = skillsText.split(',').map { it.trim() }.filter { it.isNotBlank() }
     val profileStrength = calculateProfileStrength(
         requiredFields = listOf(name, headline, detail, skillsText, about),
-        hasCv = cvUri != null,
+        hasCv = cvPath.isNotBlank(),
         cvRequired = accountType == AccountType.STUDENT
     )
     val accent = if (accountType == AccountType.STUDENT) Violet40 else Mint40
@@ -148,7 +177,7 @@ fun ProfileScreen(
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Profile", style = MaterialTheme.typography.headlineSmall)
+            Text(tr("Profile"), style = MaterialTheme.typography.headlineSmall)
             Row {
                 IconButton(onClick = onOpenSettings) {
                     Icon(Icons.Filled.Settings, contentDescription = "Open settings")
@@ -156,7 +185,7 @@ fun ProfileScreen(
                 OutlinedButton(onClick = { editing = true }, shape = RoundedCornerShape(50)) {
                     Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.size(6.dp))
-                    Text("Edit")
+                    Text(tr("Edit"))
                 }
             }
         }
@@ -174,7 +203,7 @@ fun ProfileScreen(
         ) {
             Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text("Log out / switch account")
+            Text(tr("Log out / switch account"))
         }
         Spacer(Modifier.height(18.dp))
 
@@ -197,7 +226,7 @@ fun ProfileScreen(
         Card(colors = CardDefaults.cardColors(containerColor = accent.copy(alpha = 0.1f)), shape = RoundedCornerShape(18.dp)) {
             Column(Modifier.fillMaxWidth().padding(16.dp)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Profile strength", fontWeight = FontWeight.SemiBold)
+                    Text(tr("Profile strength"), fontWeight = FontWeight.SemiBold)
                     Text("$profileStrength%", color = accent, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(8.dp))
@@ -223,12 +252,12 @@ fun ProfileScreen(
         }
 
         Spacer(Modifier.height(24.dp))
-        Text("About", style = MaterialTheme.typography.titleMedium)
+        Text(tr("About"), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(6.dp))
         Text(about, style = MaterialTheme.typography.bodyMedium)
 
         Spacer(Modifier.height(24.dp))
-        Text(if (accountType == AccountType.STUDENT) "Skills" else "Hiring for", style = MaterialTheme.typography.titleMedium)
+        Text(if (accountType == AccountType.STUDENT) tr("Skills") else "Hiring for", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(10.dp))
         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             items(skills) { tag ->
@@ -240,25 +269,73 @@ fun ProfileScreen(
 
         if (accountType == AccountType.STUDENT) {
             Spacer(Modifier.height(24.dp))
-            Text("Portfolio", style = MaterialTheme.typography.titleMedium)
+            Text(tr("Portfolio"), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = { cvLauncher.launch(arrayOf("application/pdf")) }, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Filled.PictureAsPdf, contentDescription = null)
+            OutlinedButton(
+                onClick = { cvLauncher.launch(arrayOf("application/pdf")) },
+                enabled = !cvUploading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (cvUploading) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                } else {
+                    Icon(Icons.Filled.PictureAsPdf, contentDescription = null)
+                }
                 Spacer(Modifier.width(8.dp))
-                Text(cvUri?.substringAfterLast('/')?.let { "CV selected: $it" } ?: "Attach CV (PDF)")
+                Text(if (cvUploading) "Uploading CV…" else if (cvFileName.isNotBlank()) "Replace $cvFileName" else tr("Upload CV (PDF)"))
+            }
+            if (cvPath.isNotBlank()) {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            val downloadUrl = repository.getCvDownloadUrl(cvPath)
+                            if (downloadUrl == null) {
+                                saveMessage = "CV could not be opened."
+                            } else {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, downloadUrl).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text(tr("Open uploaded CV")) }
+            }
+
+            Spacer(Modifier.height(24.dp))
+            Text(tr("Milestone badges"), style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(10.dp))
+            val firstMatchBadge = tr("First Match")
+            val fiveCompaniesBadge = tr("5 Companies Interested")
+            val completeProfileBadge = tr("Profile Complete")
+            val badges = buildList {
+                if (matchCount >= 1) add(firstMatchBadge)
+                if (interestCount >= 5) add(fiveCompaniesBadge)
+                if (profileStrength == 100) add(completeProfileBadge)
+            }
+            if (badges.isEmpty()) {
+                Text(tr("Complete your profile and make connections to earn badges."), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(badges) { badge ->
+                        Surface(shape = RoundedCornerShape(50), color = accent.copy(alpha = 0.14f)) {
+                            Text(badge, Modifier.padding(horizontal = 12.dp, vertical = 7.dp), color = accent, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
             }
         } else {
             Spacer(Modifier.height(24.dp))
             Button(onClick = onOpenCreateJob, modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Filled.AddBusiness, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Create a job posting")
+                Text(tr("Create a job posting"))
             }
             Spacer(Modifier.height(20.dp))
-            Text("Your job listings", style = MaterialTheme.typography.titleMedium)
+            Text(tr("Your job listings"), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             if (companyJobs.isEmpty()) {
-                Text("You have not published a job yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(tr("You have not published a job yet."), color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 companyJobs.forEach { job ->
                     Card(
@@ -277,7 +354,7 @@ fun ProfileScreen(
                                     if (deleted?.success == true) companyJobs = companyJobs.filterNot { it.id == job.id }
                                     saveMessage = deleted?.message
                                 }
-                            }) { Text("Delete listing") }
+                            }) { Text(tr("Delete listing")) }
                         }
                     }
                 }
@@ -285,11 +362,20 @@ fun ProfileScreen(
         }
 
         Spacer(Modifier.height(24.dp))
-        Text("Application activity", style = MaterialTheme.typography.titleMedium)
+        Text(tr("Application activity"), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             StatTile(if (accountType == AccountType.STUDENT) "Saved" else "Listings", if (accountType == AccountType.COMPANY) companyJobs.size.toString() else "—", accent, Modifier.weight(1f))
-            StatTile("Matches", matchCount.toString(), accent, Modifier.weight(1f))
+            StatTile(tr("Matches"), matchCount.toString(), accent, Modifier.weight(1f))
+        }
+        if (accountType == AccountType.STUDENT) {
+            Spacer(Modifier.height(10.dp))
+            StatTile(
+                tr("Average reply time"),
+                averageReplyMillis?.let(::formatReplyTime) ?: tr("No replies yet"),
+                accent,
+                Modifier.fillMaxWidth()
+            )
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -340,6 +426,15 @@ fun ProfileScreen(
     }
 }
 
+private fun formatReplyTime(milliseconds: Long): String {
+    val minutes = (milliseconds / 60_000).coerceAtLeast(1)
+    return when {
+        minutes < 60 -> "$minutes min"
+        minutes < 1_440 -> "${minutes / 60} hr ${minutes % 60} min"
+        else -> "${minutes / 1_440} days"
+    }
+}
+
 @Composable
 private fun ProfileEditorDialog(
     accountType: AccountType,
@@ -360,18 +455,18 @@ private fun ProfileEditorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit profile") },
+        title = { Text(tr("Edit profile")) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(name, { name = it }, label = { Text(if (accountType == AccountType.STUDENT) "Full name" else "Company name") }, singleLine = true)
                 OutlinedTextField(headline, { headline = it }, label = { Text(if (accountType == AccountType.STUDENT) "Course / headline" else "Industry") }, singleLine = true)
                 OutlinedTextField(detail, { detail = it }, label = { Text(if (accountType == AccountType.STUDENT) "Study year" else "Location") }, singleLine = true)
                 OutlinedTextField(skills, { skills = it }, label = { Text(if (accountType == AccountType.STUDENT) "Skills (comma separated)" else "Hiring for (comma separated)") })
-                OutlinedTextField(about, { about = it }, label = { Text("About") }, minLines = 3)
+                OutlinedTextField(about, { about = it }, label = { Text(tr("About")) }, minLines = 3)
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(name, headline, detail, skills, about) }, enabled = valid) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { TextButton(onClick = { onSave(name, headline, detail, skills, about) }, enabled = valid) { Text(tr("Save")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Cancel")) } }
     )
 }
 

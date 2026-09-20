@@ -58,6 +58,7 @@ import com.swipehire.app.data.currentFirebaseUserId
 import com.swipehire.app.ui.theme.Mint40
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.glow
+import com.swipehire.app.ui.tr
 import com.swipehire.app.util.distanceKm
 import com.swipehire.app.util.formatDistance
 import com.swipehire.app.viewmodel.DiscoverViewModel
@@ -132,7 +133,7 @@ fun NearbyJobsScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
             }
-            Text("Jobs near you", style = MaterialTheme.typography.titleMedium)
+            Text(tr("Jobs near you"), style = MaterialTheme.typography.titleMedium)
         }
 
         if (!hasLocationPermission) {
@@ -205,7 +206,7 @@ private fun LocationPermissionPrompt(onGrant: () -> Unit) {
             Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(44.dp), tint = Violet40)
         }
         Spacer(Modifier.height(16.dp))
-        Text("See jobs close to you", style = MaterialTheme.typography.titleMedium)
+        Text(tr("See jobs close to you"), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(6.dp))
         Text(
             "SwipeHire needs your location to sort listings by distance and show them on the map.",
@@ -217,7 +218,7 @@ private fun LocationPermissionPrompt(onGrant: () -> Unit) {
             onClick = onGrant,
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Violet40)
-        ) { Text("Allow location access") }
+        ) { Text(tr("Allow location access")) }
     }
 }
 

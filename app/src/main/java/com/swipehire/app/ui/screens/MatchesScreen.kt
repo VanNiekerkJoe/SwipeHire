@@ -36,6 +36,7 @@ import com.swipehire.app.data.MatchChat
 import com.swipehire.app.ui.theme.Mint40
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.glow
+import com.swipehire.app.ui.tr
 import com.swipehire.app.viewmodel.MatchesViewModel
 
 @Composable
@@ -50,7 +51,7 @@ fun MatchesScreen(onOpenChat: (String) -> Unit, viewModel: MatchesViewModel = vi
         )
         if (matchesList.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No matches yet — keep swiping!", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(tr("No matches yet — keep swiping!"), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(

@@ -16,6 +16,7 @@ import com.swipehire.app.data.currentFirebaseUserId
 import com.swipehire.app.ui.components.SwipeHireBottomBar
 import com.swipehire.app.ui.components.SwipeHireTab
 import com.swipehire.app.ui.screens.ChatDetailScreen
+import com.swipehire.app.ui.screens.AlertsScreen
 import com.swipehire.app.ui.screens.CreateJobScreen
 import com.swipehire.app.ui.screens.DiscoverScreen
 import com.swipehire.app.ui.screens.JobLocationScreen
@@ -27,12 +28,14 @@ import com.swipehire.app.ui.screens.RoleSelectScreen
 import com.swipehire.app.ui.screens.SettingsScreen
 import com.swipehire.app.viewmodel.SettingsViewModel
 import com.swipehire.app.viewmodel.MatchesViewModel
+import com.swipehire.app.viewmodel.AlertsViewModel
 
 private object Routes {
     const val LOGIN = "login"
     const val ROLE_SELECT = "role_select"
     const val DISCOVER = "discover"
     const val MATCHES = "matches"
+    const val ALERTS = "alerts"
     const val CHAT = "chat/{matchId}"
     const val PROFILE = "profile"
     const val SETTINGS = "settings"
@@ -41,7 +44,7 @@ private object Routes {
     const val CREATE_JOB = "create_job"
 }
 
-private val mainTabRoutes = setOf(Routes.DISCOVER, Routes.MATCHES, Routes.PROFILE, Routes.SETTINGS)
+private val mainTabRoutes = setOf(Routes.DISCOVER, Routes.MATCHES, Routes.ALERTS, Routes.PROFILE)
 
 @Composable
 fun SwipeHireApp(settingsViewModel: SettingsViewModel = viewModel()) {
@@ -49,9 +52,12 @@ fun SwipeHireApp(settingsViewModel: SettingsViewModel = viewModel()) {
     val settingsState by settingsViewModel.state.collectAsState()
     val matchesViewModel: MatchesViewModel = viewModel()
     val matches by matchesViewModel.matches.collectAsState()
+    val alertsViewModel: AlertsViewModel = viewModel()
+    val alerts by alertsViewModel.alerts.collectAsState()
 
     LaunchedEffect(settingsState.onboarded) {
         matchesViewModel.refresh()
+        alertsViewModel.refresh()
     }
 
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -74,12 +80,18 @@ fun SwipeHireApp(settingsViewModel: SettingsViewModel = viewModel()) {
                 val currentTab = when (currentRoute) {
                     Routes.DISCOVER -> SwipeHireTab.DISCOVER
                     Routes.MATCHES -> SwipeHireTab.MATCHES
+                    Routes.ALERTS -> SwipeHireTab.ALERTS
                     Routes.PROFILE -> SwipeHireTab.PROFILE
-                    else -> SwipeHireTab.SETTINGS
+                    else -> SwipeHireTab.DISCOVER
                 }
                 SwipeHireBottomBar(
                     currentTab = currentTab,
                     hasUnreadMatches = matches.any { it.unread },
+                    hasUnreadAlerts = alerts.any { alert ->
+                        !alert.isRead && settingsState.pushNotifications &&
+                            ((alert.type == com.swipehire.app.data.AlertType.MATCH && settingsState.matchAlerts) ||
+                                (alert.type == com.swipehire.app.data.AlertType.MESSAGE && settingsState.messageAlerts))
+                    },
                     onTabSelected = { tab ->
                         navigateToMainTab(tab.route)
                     }
@@ -136,6 +148,16 @@ fun SwipeHireApp(settingsViewModel: SettingsViewModel = viewModel()) {
             composable(Routes.MATCHES) {
                 MatchesScreen(onOpenChat = { matchId -> navController.navigate("chat/$matchId") }, viewModel = matchesViewModel)
             }
+            composable(Routes.ALERTS) {
+                AlertsScreen(
+                    notificationsEnabled = settingsState.pushNotifications,
+                    matchAlertsEnabled = settingsState.matchAlerts,
+                    messageAlertsEnabled = settingsState.messageAlerts,
+                    onOpenChat = { matchId -> navController.navigate("chat/$matchId") },
+                    onOpenMatches = { navigateToMainTab(Routes.MATCHES) },
+                    viewModel = alertsViewModel
+                )
+            }
             composable(Routes.CHAT) { backStack ->
                 val matchId = backStack.arguments?.getString("matchId") ?: ""
                 ChatDetailScreen(matchId = matchId, onBack = { navController.popBackStack() })
@@ -164,6 +186,7 @@ fun SwipeHireApp(settingsViewModel: SettingsViewModel = viewModel()) {
             composable(Routes.SETTINGS) {
                 SettingsScreen(
                     viewModel = settingsViewModel,
+                    onBack = { navigateToMainTab(Routes.PROFILE) },
                     onLoggedOut = {
                         settingsViewModel.logOut()
                         navController.navigate(Routes.LOGIN) { popUpTo(0) }

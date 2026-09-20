@@ -44,6 +44,7 @@ import com.swipehire.app.data.AccountType
 import com.swipehire.app.data.currentFirebaseUserId
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.glow
+import com.swipehire.app.ui.tr
 import com.swipehire.app.viewmodel.DiscoverViewModel
 
 @Composable
@@ -62,7 +63,7 @@ fun JobLocationScreen(
     val job = jobStack.find { it.id == jobId }
     if (job == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Loading job location…")
+            Text(tr("Loading job location…"))
         }
         return
     }
@@ -135,7 +136,7 @@ fun JobLocationScreen(
             ) {
                 Icon(Icons.Filled.Directions, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
-                Text("Get directions", fontWeight = FontWeight.Bold)
+                Text(tr("Get directions"), fontWeight = FontWeight.Bold)
             }
         }
     }

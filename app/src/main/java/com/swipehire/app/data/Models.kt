@@ -3,6 +3,17 @@ package com.swipehire.app.data
 /** The account role is stored in users/{firebaseUid}.role and cannot be switched in-app. */
 enum class AccountType { STUDENT, COMPANY }
 
+enum class AppLanguage(val code: String, val displayName: String) {
+    ENGLISH("en", "English"),
+    ISIZULU("zu", "isiZulu"),
+    AFRIKAANS("af", "Afrikaans"),
+    SESOTHO("st", "Sesotho");
+
+    companion object {
+        fun fromCode(code: String?): AppLanguage = entries.firstOrNull { it.code == code } ?: ENGLISH
+    }
+}
+
 enum class RemoteType(val label: String) {
     ON_SITE("On-site"),
     HYBRID("Hybrid"),
@@ -35,7 +46,9 @@ data class StudentProfile(
     val skills: List<String>,
     val blurb: String,
     val avatarInitials: String,
-    val matchedSkills: List<String>
+    val matchedSkills: List<String>,
+    val cvPath: String = "",
+    val cvFileName: String = ""
 )
 
 data class CompanyProfile(
@@ -51,8 +64,12 @@ data class CompanyProfile(
 data class ChatMessage(
     val id: String,
     val text: String,
-    val fromMe: Boolean
+    val fromMe: Boolean,
+    val sentAtMillis: Long,
+    val deliveryState: MessageDeliveryState
 )
+
+enum class MessageDeliveryState { SENDING, SENT, READ }
 
 /** A real Firestore match. Only participantIds may read or write its conversation. */
 data class MatchChat(
@@ -62,5 +79,21 @@ data class MatchChat(
     val subtitle: String,
     val avatarInitials: String,
     val lastMessage: String,
-    val unread: Boolean
+    val unread: Boolean,
+    val otherUserId: String = "",
+    val studentCvPath: String = "",
+    val studentCvFileName: String = ""
+)
+
+enum class AlertType { MATCH, MESSAGE }
+
+data class AppAlert(
+    val id: String,
+    val type: AlertType,
+    val title: String,
+    val body: String,
+    val matchId: String,
+    val actorId: String,
+    val createdAtMillis: Long,
+    val isRead: Boolean
 )
