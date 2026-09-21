@@ -1,7 +1,7 @@
 package com.swipehire.app.ui.screens
 
 import android.util.Patterns
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,13 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -41,9 +39,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -63,9 +62,9 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.GoogleAuthProvider
+import com.swipehire.app.R
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.auroraMesh
-import com.swipehire.app.ui.theme.glow
 import com.swipehire.app.ui.tr
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -196,13 +195,12 @@ fun LoginScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                Modifier.size(70.dp).glow(Violet40, radiusMultiplier = 2.6f, alpha = 0.6f)
-                    .clip(CircleShape).background(Color.White.copy(alpha = 0.14f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Filled.Style, contentDescription = null, tint = Color.White, modifier = Modifier.size(34.dp))
-            }
+            Image(
+                painter = painterResource(R.drawable.login_logo),
+                contentDescription = "SwipeHire logo",
+                modifier = Modifier.size(88.dp),
+                contentScale = ContentScale.Fit
+            )
             Spacer(Modifier.height(14.dp))
             Text("SwipeHire", color = Color.White, style = MaterialTheme.typography.displaySmall, textAlign = TextAlign.Center)
             Text(
