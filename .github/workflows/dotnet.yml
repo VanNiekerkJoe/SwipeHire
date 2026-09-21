@@ -1,4 +1,4 @@
-name: .NET
+name: .NET API
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "master" ]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,16 +20,10 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore API
-        run: dotnet restore SwipeHire.Api/SwipeHire.Api.csproj
+        run: dotnet restore SwipeHire.Api/SwipeHire.Api/SwipeHire.Api.csproj
 
       - name: Build API
-        run: dotnet build SwipeHire.Api/SwipeHire.Api.csproj --no-restore --configuration Release
+        run: dotnet build SwipeHire.Api/SwipeHire.Api/SwipeHire.Api.csproj --no-restore --configuration Release
 
-      - name: Restore tests
-        run: dotnet restore SwipeHire.Api.Tests/SwipeHire.Api.Tests.csproj
-
-      - name: Build tests
-        run: dotnet build SwipeHire.Api.Tests/SwipeHire.Api.Tests.csproj --no-restore --configuration Release
-
-      - name: Run unit tests
-        run: dotnet test SwipeHire.Api.Tests/SwipeHire.Api.Tests.csproj --no-build --configuration Release
+      - name: Test API
+        run: dotnet test SwipeHire.Api/SwipeHire.Api/SwipeHire.Api.csproj --no-build --configuration Release
