@@ -42,6 +42,7 @@ import com.swipehire.app.ui.theme.Coral
 import com.swipehire.app.ui.tr
 import com.swipehire.app.ui.theme.Mint40
 import com.swipehire.app.ui.theme.Violet40
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 enum class SwipeHireTab(val route: String, val label: String) {
     DISCOVER("discover", "Discover"),
@@ -74,8 +75,11 @@ fun SwipeHireBottomBar(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 22.dp, vertical = 16.dp)
+            .navigationBarsPadding()
+            .padding(horizontal = 22.dp)
+            .padding(top = 8.dp, bottom = 16.dp)
             .height(66.dp),
+
         shape = RoundedCornerShape(30.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
         shadowElevation = 20.dp,

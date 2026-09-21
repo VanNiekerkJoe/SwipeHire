@@ -90,23 +90,46 @@ public sealed class FirestoreDataService
         return true;
     }
 
-    public async Task<IReadOnlyList<StudentProfileDto>> GetStudentsAsync(CancellationToken cancellationToken)
+public async Task<IReadOnlyList<StudentProfileDto>> GetStudentsAsync(
+    CancellationToken cancellationToken)
+{
+    var snapshot = await Database
+        .Collection("students")
+        .GetSnapshotAsync(cancellationToken);
+
+    var students = new List<StudentProfileDto>();
+
+    foreach (var document in snapshot.Documents)
     {
         try
         {
-            var snapshot = await Database.Collection("students").GetSnapshotAsync(cancellationToken);
-            return snapshot.Documents
-                .Select(document => (Document: document, Data: document.ConvertTo<FirestoreStudentDocument>()))
-                .Where(item => item.Data.UserId == item.Document.Id && item.Data.ProfileVisible)
-                .Select(item => item.Data.ToDto(item.Document.Id))
-                .OrderBy(student => student.Name)
-                .ToList();
+            var data = document.ConvertTo<FirestoreStudentDocument>();
+
+            _logger.LogInformation(
+                "Student {Id}: UserId={UserId}, ProfileVisible={ProfileVisible}",
+                document.Id,
+                data.UserId,
+                data.ProfileVisible);
+
+            if (!data.ProfileVisible)
+                continue;
+
+            students.Add(data.ToDto(document.Id));
         }
-        catch (Exception exception) when (IsExpectedCancellation(exception, cancellationToken))
+        catch (Exception exception)
         {
-            return [];
+            _logger.LogError(
+                exception,
+                "Failed to deserialize student document {StudentId}",
+                document.Id);
         }
     }
+
+    return students
+        .OrderBy(student => student.Name)
+        .ToList();
+}
+
 
     public async Task<string> UpsertStudentAsync(string? id, CreateStudentDto student, CancellationToken cancellationToken)
     {

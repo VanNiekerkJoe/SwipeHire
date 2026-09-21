@@ -12,7 +12,20 @@
           "package_name": "com.swipehire.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "998671821734-3q7qhkji4ltlmpafh0pi3cn7s2r17p6u.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.swipehire.app",
+            "certificate_hash": "1414168cf09ddb591ea84e6171959bf9b7afc583"
+          }
+        },
+        {
+          "client_id": "998671821734-r99nl03a8sq08pj9ioucpncdteehgrsr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB5g-xIbhmpgOWBb5xw7dD-qgSVqpUTEjU"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "998671821734-r99nl03a8sq08pj9ioucpncdteehgrsr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

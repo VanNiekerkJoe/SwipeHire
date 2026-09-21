@@ -1,3 +1,10 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.OpenApi;
+using SwipeHire.Api.Authentication;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
+
 namespace SwipeHire.Api
 {
     public class Program
@@ -11,11 +18,55 @@ namespace SwipeHire.Api
             builder.Logging.ClearProviders();
             builder.Logging.AddConsole();
 
+            // Rate limiting
+            builder.Services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+                // General authenticated API limit:
+                // 10 requests per Firebase user per minute.
+                options.AddPolicy("general", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: GetUserRateLimitKey(httpContext),
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 10,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0,
+                            AutoReplenishment = true
+                        }));
+
+                // Geocoding limit:
+                // 1 request per Firebase user per minute.
+                options.AddPolicy("geocoding", httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: GetUserRateLimitKey(httpContext),
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 1,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0,
+                            AutoReplenishment = true
+                        }));
+            });
+
+            builder.Services
+                .AddAuthentication("Firebase")
+                .AddScheme<AuthenticationSchemeOptions, FirebaseAuthenticationHandler>(
+                    "Firebase",
+                    _ => { });
+
+            builder.Services.AddAuthorization();
+
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddSingleton<Services.FirestoreDataService>();
+
+            builder.Services.AddSingleton<Services.ApiUsageLimitService>();
+
             builder.Services.AddHttpClient<Services.GoogleGeocodingService>();
+
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
 
@@ -40,7 +91,6 @@ namespace SwipeHire.Api
                 }
             });
 
-
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -51,12 +101,24 @@ namespace SwipeHire.Api
                 });
             }
 
+            app.UseAuthentication();
             app.UseAuthorization();
-
+            app.UseRateLimiter();
 
             app.MapControllers();
 
             app.Run();
+        }
+
+        private static string GetUserRateLimitKey(
+            HttpContext context)
+        {
+            var userId = context.User.FindFirstValue(
+                ClaimTypes.NameIdentifier);
+
+            return string.IsNullOrWhiteSpace(userId)
+                ? "anonymous"
+                : $"user:{userId}";
         }
     }
 }
