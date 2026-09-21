@@ -35,10 +35,20 @@ public sealed class SwipesController(FirestoreDataService database) : Controller
             return Forbid();
         }
 
-        return Ok(
-            await database.GetSwipedTargetIdsAsync(
-                authenticatedUserId,
-                cancellationToken));
+        var targetIds = await database.GetSwipedTargetIdsAsync(
+            authenticatedUserId,
+            cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested)
+            return new EmptyResult();
+
+        if (targetIds is null)
+            return Problem(
+                statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Swipe list temporarily unavailable",
+                detail: "The database request did not complete. Please retry.");
+
+        return Ok(targetIds);
     }
 
     [HttpPost]

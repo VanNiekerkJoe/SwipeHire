@@ -3,18 +3,23 @@ using System.Text.Encodings.Web;
 using FirebaseAdmin.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
+using SwipeHire.Api.Services;
 
 namespace SwipeHire.Api.Authentication;
 
 public sealed class FirebaseAuthenticationHandler
     : AuthenticationHandler<AuthenticationSchemeOptions>
 {
+    private readonly FirebaseAuthenticationService _firebaseAuthenticationService;
+
     public FirebaseAuthenticationHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
-        UrlEncoder encoder)
+        UrlEncoder encoder,
+        FirebaseAuthenticationService firebaseAuthenticationService)
         : base(options, logger, encoder)
     {
+        _firebaseAuthenticationService = firebaseAuthenticationService;
     }
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -23,7 +28,7 @@ public sealed class FirebaseAuthenticationHandler
 
         if (string.IsNullOrWhiteSpace(authorization))
         {
-            Logger.LogWarning("No Authorization header.");
+            Logger.LogDebug("No Authorization header.");
             return AuthenticateResult.NoResult();
         }
 
@@ -43,7 +48,7 @@ public sealed class FirebaseAuthenticationHandler
         try
         {
             var decodedToken =
-                await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(token);
+                await _firebaseAuthenticationService.VerifyTokenAsync(token);
 
             var claims = new[]
             {
@@ -60,7 +65,7 @@ public sealed class FirebaseAuthenticationHandler
             return AuthenticateResult.Success(
                 new AuthenticationTicket(principal, Scheme.Name));
         }
-        catch (Exception exception)
+        catch (FirebaseAuthException exception)
         {
             Logger.LogWarning(
                 exception,

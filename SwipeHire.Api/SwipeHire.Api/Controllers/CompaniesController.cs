@@ -15,10 +15,19 @@ public sealed class CompaniesController(FirestoreDataService database) : Control
 {
     [HttpGet("{companyId}/jobs")]
     [AllowAnonymous]
+    [EnableRateLimiting("public")]
     public async Task<IActionResult> GetJobs(
         string companyId,
-        CancellationToken cancellationToken) =>
-        Ok(await database.GetCompanyJobsAsync(companyId, cancellationToken));
+        CancellationToken cancellationToken)
+    {
+        var jobs = await database.GetCompanyJobsAsync(companyId, cancellationToken);
+        if (cancellationToken.IsCancellationRequested) return new EmptyResult();
+        return jobs is null
+            ? Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Company jobs temporarily unavailable",
+                detail: "The database request did not complete. Please retry.")
+            : Ok(jobs);
+    }
 
     [HttpPost]
     public async Task<IActionResult> CreateCompany(
@@ -41,6 +50,12 @@ public sealed class CompaniesController(FirestoreDataService database) : Control
             userId,
             dto,
             cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested) return new EmptyResult();
+        if (newId is null)
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Company profile temporarily unavailable",
+                detail: "The database request did not complete. Please retry.");
 
         return CreatedAtAction(
             nameof(CreateCompany),
@@ -73,10 +88,16 @@ public sealed class CompaniesController(FirestoreDataService database) : Control
         if (!string.Equals(id, userId, StringComparison.Ordinal))
             return Forbid();
 
-        await database.UpsertCompanyAsync(
+        var updatedId = await database.UpsertCompanyAsync(
             userId,
             dto,
             cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested) return new EmptyResult();
+        if (updatedId is null)
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Company profile temporarily unavailable",
+                detail: "The database request did not complete. Please retry.");
 
         return Ok(
             new ProfileResponseDto

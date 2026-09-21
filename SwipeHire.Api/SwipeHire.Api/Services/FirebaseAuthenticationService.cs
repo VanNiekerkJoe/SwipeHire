@@ -6,7 +6,7 @@ namespace SwipeHire.Api.Services;
 
 public sealed class FirebaseAuthenticationService
 {
-    private readonly FirebaseAuth _auth;
+    private readonly Lazy<FirebaseAuth> _auth;
 
     public FirebaseAuthenticationService(IConfiguration configuration)
     {
@@ -16,20 +16,24 @@ public sealed class FirebaseAuthenticationService
             throw new InvalidOperationException(
                 "Firebase:ProjectId must be configured.");
 
-        if (FirebaseApp.DefaultInstance is null)
+        _auth = new Lazy<FirebaseAuth>(() =>
         {
-            FirebaseApp.Create(new AppOptions
+            if (FirebaseApp.DefaultInstance is null)
             {
-                ProjectId = projectId,
-                Credential = GoogleCredential.GetApplicationDefault()
-            });
-        }
+                FirebaseApp.Create(new AppOptions
+                {
+                    ProjectId = projectId,
+                    Credential = GoogleCredentialConfiguration.GetConfigured(configuration)
+                        ?? GoogleCredential.GetApplicationDefault()
+                });
+            }
 
-        _auth = FirebaseAuth.DefaultInstance;
+            return FirebaseAuth.DefaultInstance;
+        });
     }
 
     public async Task<FirebaseToken> VerifyTokenAsync(string idToken)
     {
-        return await _auth.VerifyIdTokenAsync(idToken);
+        return await _auth.Value.VerifyIdTokenAsync(idToken);
     }
 }

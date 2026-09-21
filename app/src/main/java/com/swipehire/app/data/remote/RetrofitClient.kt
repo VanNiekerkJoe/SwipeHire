@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 object RetrofitClient {
 
     private val logging = HttpLoggingInterceptor().apply {
+        redactHeader("Authorization")
         level = if (BuildConfig.DEBUG) {
             HttpLoggingInterceptor.Level.BODY
         } else {
@@ -22,10 +23,22 @@ object RetrofitClient {
 
     private val firebaseAuthInterceptor = Interceptor { chain ->
 
+        val originalRequest = chain.request()
+        val segments = originalRequest.url.pathSegments
+        val publicFeed = originalRequest.method == "GET" &&
+            (segments == listOf("api", "jobs") ||
+                segments == listOf("api", "students") ||
+                (segments.size == 4 && segments[0] == "api" &&
+                    segments[1] == "companies" && segments[3] == "jobs"))
+
+        if (publicFeed) {
+            return@Interceptor chain.proceed(originalRequest)
+        }
+
         val user = FirebaseAuth.getInstance().currentUser
 
         if (user == null) {
-            return@Interceptor chain.proceed(chain.request())
+            return@Interceptor chain.proceed(originalRequest)
         }
 
         val token = try {
@@ -38,7 +51,7 @@ object RetrofitClient {
             null
         }
 
-        val request = chain.request()
+        val request = originalRequest
             .newBuilder()
             .apply {
                 if (!token.isNullOrBlank()) {
@@ -57,7 +70,8 @@ object RetrofitClient {
         .addInterceptor(firebaseAuthInterceptor)
         .addInterceptor(logging)
         .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
+        // Give the API time to resume when Visual Studio is paused at a breakpoint.
+        .readTimeout(if (BuildConfig.DEBUG) 120 else 30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 

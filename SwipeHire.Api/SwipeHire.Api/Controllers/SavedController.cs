@@ -32,10 +32,18 @@ public sealed class SavedController(FirestoreDataService database) : ControllerB
             return Forbid();
         }
 
-        return Ok(
-            await database.GetSavedItemsAsync(
-                authenticatedUserId,
-                cancellationToken));
+        var savedItems = await database.GetSavedItemsAsync(
+            authenticatedUserId,
+            cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested)
+            return new EmptyResult();
+
+        return savedItems is null
+            ? Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Saved items temporarily unavailable",
+                detail: "The database request did not complete. Please retry.")
+            : Ok(savedItems);
     }
 
     [HttpPut("{kind}/{itemId}")]
@@ -65,13 +73,21 @@ public sealed class SavedController(FirestoreDataService database) : ControllerB
 
         try
         {
-            return Ok(
-                await database.SetSavedItemAsync(
-                    authenticatedUserId,
-                    kind,
-                    itemId,
-                    request.Saved,
-                    cancellationToken));
+            var savedItems = await database.SetSavedItemAsync(
+                authenticatedUserId,
+                kind,
+                itemId,
+                request.Saved,
+                cancellationToken);
+
+            if (cancellationToken.IsCancellationRequested)
+                return new EmptyResult();
+
+            return savedItems is null
+                ? Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                    title: "Saved items temporarily unavailable",
+                    detail: "The database request did not complete. Please retry.")
+                : Ok(savedItems);
         }
         catch (ArgumentOutOfRangeException exception)
         {

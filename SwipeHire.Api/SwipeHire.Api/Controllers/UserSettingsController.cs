@@ -36,10 +36,16 @@ public sealed class UserSettingsController(
             return Forbid();
         }
 
-        return Ok(
-            await database.GetUserSettingsAsync(
-                authenticatedUserId,
-                cancellationToken));
+        var settings = await database.GetUserSettingsAsync(
+            authenticatedUserId,
+            cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested) return new EmptyResult();
+        return settings is null
+            ? Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Settings temporarily unavailable",
+                detail: "The database request did not complete. Please retry.")
+            : Ok(settings);
     }
 
     [HttpPut]
@@ -65,10 +71,16 @@ public sealed class UserSettingsController(
             return Forbid();
         }
 
-        return Ok(
-            await database.SetUserSettingsAsync(
-                authenticatedUserId,
-                settings,
-                cancellationToken));
+        var updatedSettings = await database.SetUserSettingsAsync(
+            authenticatedUserId,
+            settings,
+            cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested) return new EmptyResult();
+        return updatedSettings is null
+            ? Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Settings temporarily unavailable",
+                detail: "The database request did not complete. Please retry.")
+            : Ok(updatedSettings);
     }
 }

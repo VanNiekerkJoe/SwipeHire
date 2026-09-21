@@ -16,9 +16,18 @@ public sealed class JobsController(FirestoreDataService database) : ControllerBa
 {
     [HttpGet]
     [AllowAnonymous]
+    [EnableRateLimiting("public")]
     public async Task<IActionResult> GetJobs(
-        CancellationToken cancellationToken) =>
-        Ok(await database.GetJobsAsync(cancellationToken));
+        CancellationToken cancellationToken)
+    {
+        var jobs = await database.GetJobsAsync(cancellationToken);
+        if (cancellationToken.IsCancellationRequested) return new EmptyResult();
+        return jobs is null
+            ? Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Jobs temporarily unavailable",
+                detail: "The database request did not complete. Please retry.")
+            : Ok(jobs);
+    }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteJob(
@@ -76,6 +85,12 @@ public sealed class JobsController(FirestoreDataService database) : ControllerBa
         var newJobId = await database.CreateJobAsync(
             dto,
             cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested) return new EmptyResult();
+        if (newJobId is null)
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Job posting temporarily unavailable",
+                detail: "The database request did not complete. Please retry.");
 
         return CreatedAtAction(
             nameof(GetJobs),

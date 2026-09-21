@@ -29,52 +29,76 @@ public sealed class FirestoreDataService
                 EmulatorDetection = EmulatorDetection.EmulatorOrProduction
             };
 
+            builder.GoogleCredential = GoogleCredentialConfiguration.GetConfigured(configuration);
+
             return builder.Build();
         });
     }
 
     private FirestoreDb Database => _database.Value;
 
-    public async Task<IReadOnlyList<JobPostingDto>> GetJobsAsync(CancellationToken cancellationToken)
+    private async Task<T?> TryReadSnapshotAsync<T>(
+        Func<Task<T>> read,
+        string operation,
+        CancellationToken cancellationToken) where T : class
     {
         try
         {
-            var snapshot = await Database.Collection("jobs").GetSnapshotAsync(cancellationToken);
-            return snapshot.Documents
-                .Select(document => (Document: document, Data: document.ConvertTo<FirestoreJobDocument>()))
-                .Where(item => item.Data.ProfileVisible)
-                .Select(item => item.Data.ToDto(item.Document.Id))
-                .Where(job => !string.IsNullOrWhiteSpace(job.CompanyId))
-                .OrderByDescending(job => job.Id)
-                .ToList();
+            return await read();
         }
-        catch (Exception exception) when (IsExpectedCancellation(exception, cancellationToken))
+        catch (RpcException exception) when (exception.StatusCode == StatusCode.Cancelled)
         {
-            return [];
+            if (cancellationToken.IsCancellationRequested)
+                _logger.LogInformation("The {Operation} read was cancelled after its client disconnected.", operation);
+            else
+                _logger.LogError(exception, "Firestore cancelled the {Operation} read while the client was connected.", operation);
+
+            return null;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("The {Operation} read was cancelled after its client disconnected.", operation);
+            return null;
         }
     }
 
-    public async Task<IReadOnlyList<JobPostingDto>> GetCompanyJobsAsync(string companyId, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<JobPostingDto>?> GetJobsAsync(CancellationToken cancellationToken)
     {
-        try
-        {
-            var snapshot = await Database.Collection("jobs")
+        var snapshot = await TryReadSnapshotAsync(
+            () => Database.Collection("jobs").GetSnapshotAsync(cancellationToken),
+            "jobs",
+            cancellationToken);
+        if (snapshot is null) return null;
+
+        return snapshot.Documents
+            .Select(document => (Document: document, Data: document.ConvertTo<FirestoreJobDocument>()))
+            .Where(item => item.Data.ProfileVisible)
+            .Select(item => item.Data.ToDto(item.Document.Id))
+            .Where(job => !string.IsNullOrWhiteSpace(job.CompanyId))
+            .OrderByDescending(job => job.Id)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<JobPostingDto>?> GetCompanyJobsAsync(string companyId, CancellationToken cancellationToken)
+    {
+        var snapshot = await TryReadSnapshotAsync(
+            () => Database.Collection("jobs")
                 .WhereEqualTo("companyId", companyId)
-                .GetSnapshotAsync(cancellationToken);
-            return snapshot.Documents
-                .Select(document => document.ConvertTo<FirestoreJobDocument>().ToDto(document.Id))
-                .ToList();
-        }
-        catch (Exception exception) when (IsExpectedCancellation(exception, cancellationToken))
-        {
-            return [];
-        }
+                .GetSnapshotAsync(cancellationToken),
+            "company jobs",
+            cancellationToken);
+        if (snapshot is null) return null;
+
+        return snapshot.Documents
+            .Select(document => document.ConvertTo<FirestoreJobDocument>().ToDto(document.Id))
+            .ToList();
     }
 
-    public async Task<string> CreateJobAsync(CreateJobPostingDto job, CancellationToken cancellationToken)
+    public async Task<string?> CreateJobAsync(CreateJobPostingDto job, CancellationToken cancellationToken)
     {
         var document = Database.Collection("jobs").Document();
         var settings = await GetUserSettingsAsync(job.CompanyId, cancellationToken);
+        if (settings is null) return null;
         var jobDocument = FirestoreJobDocument.From(job);
         jobDocument.ProfileVisible = settings.ProfileVisible;
         await document.SetAsync(jobDocument, cancellationToken: cancellationToken);
@@ -90,12 +114,14 @@ public sealed class FirestoreDataService
         return true;
     }
 
-public async Task<IReadOnlyList<StudentProfileDto>> GetStudentsAsync(
+public async Task<IReadOnlyList<StudentProfileDto>?> GetStudentsAsync(
     CancellationToken cancellationToken)
 {
-    var snapshot = await Database
-        .Collection("students")
-        .GetSnapshotAsync(cancellationToken);
+    var snapshot = await TryReadSnapshotAsync(
+        () => Database.Collection("students").GetSnapshotAsync(cancellationToken),
+        "students",
+        cancellationToken);
+    if (snapshot is null) return null;
 
     var students = new List<StudentProfileDto>();
 
@@ -131,26 +157,30 @@ public async Task<IReadOnlyList<StudentProfileDto>> GetStudentsAsync(
 }
 
 
-    public async Task<string> UpsertStudentAsync(string? id, CreateStudentDto student, CancellationToken cancellationToken)
+    public async Task<string?> UpsertStudentAsync(string? id, CreateStudentDto student, CancellationToken cancellationToken)
     {
         var document = string.IsNullOrWhiteSpace(id)
             ? Database.Collection("students").Document()
             : Database.Collection("students").Document(id);
         var studentDocument = FirestoreStudentDocument.From(student);
         studentDocument.UserId = document.Id;
-        studentDocument.ProfileVisible = (await GetUserSettingsAsync(document.Id, cancellationToken)).ProfileVisible;
+        var settings = await GetUserSettingsAsync(document.Id, cancellationToken);
+        if (settings is null) return null;
+        studentDocument.ProfileVisible = settings.ProfileVisible;
         await document.SetAsync(studentDocument, SetOptions.MergeAll, cancellationToken);
         return document.Id;
     }
 
-    public async Task<string> UpsertCompanyAsync(string? id, CreateCompanyDto company, CancellationToken cancellationToken)
+    public async Task<string?> UpsertCompanyAsync(string? id, CreateCompanyDto company, CancellationToken cancellationToken)
     {
         var document = string.IsNullOrWhiteSpace(id)
             ? Database.Collection("companies").Document()
             : Database.Collection("companies").Document(id);
         var companyDocument = FirestoreCompanyDocument.From(company);
         companyDocument.UserId = document.Id;
-        companyDocument.ProfileVisible = (await GetUserSettingsAsync(document.Id, cancellationToken)).ProfileVisible;
+        var settings = await GetUserSettingsAsync(document.Id, cancellationToken);
+        if (settings is null) return null;
+        companyDocument.ProfileVisible = settings.ProfileVisible;
         await document.SetAsync(companyDocument, SetOptions.MergeAll, cancellationToken);
         return document.Id;
     }
@@ -303,30 +333,26 @@ public async Task<IReadOnlyList<StudentProfileDto>> GetStudentsAsync(
             : "SwipeHire user";
     }
 
-    public async Task<IReadOnlyList<string>> GetSwipedTargetIdsAsync(
-    string userId,
-    CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<string>?> GetSwipedTargetIdsAsync(
+        string userId,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            var snapshot = await Database.Collection("swipes")
+        var snapshot = await TryReadSnapshotAsync(
+            () => Database.Collection("swipes")
                 .WhereEqualTo("userId", userId)
-                .GetSnapshotAsync(cancellationToken);
+                .GetSnapshotAsync(cancellationToken),
+            "swipe list",
+            cancellationToken);
+        if (snapshot is null) return null;
 
-            return snapshot.Documents
-                .Select(document =>
-                    document.TryGetValue<string>("targetId", out var targetId)
-                        ? targetId
-                        : "")
-                .Where(targetId => !string.IsNullOrWhiteSpace(targetId))
-                .Distinct()
-                .ToList();
-        }
-        catch (Exception exception)
-            when (IsExpectedCancellation(exception, cancellationToken))
-        {
-            return [];
-        }
+        return snapshot.Documents
+            .Select(document =>
+                document.TryGetValue<string>("targetId", out var targetId)
+                    ? targetId
+                    : "")
+            .Where(targetId => !string.IsNullOrWhiteSpace(targetId))
+            .Distinct()
+            .ToList();
     }
 
     public async Task DeleteSwipeAsync(
@@ -335,8 +361,17 @@ public async Task<IReadOnlyList<StudentProfileDto>> GetStudentsAsync(
         string targetUserId,
         CancellationToken cancellationToken)
     {
-        var swipeId = StableDocumentId($"{userId}:{targetId}");
-        await Database.Collection("swipes").Document(swipeId).DeleteAsync(cancellationToken: cancellationToken);
+
+        var snapshot = await Database.Collection("swipes")
+            .WhereEqualTo("userId", userId)
+            .GetSnapshotAsync(cancellationToken);
+
+        foreach (var swipe in snapshot.Documents.Where(document =>
+                     document.TryGetValue<string>("targetId", out var savedTargetId) &&
+                     savedTargetId == targetId))
+        {
+            await swipe.Reference.DeleteAsync(cancellationToken: cancellationToken);
+        }
 
         if (userId == targetUserId) return;
         var participants = new[] { userId, targetUserId }.Order().ToArray();
@@ -369,25 +404,23 @@ public async Task<IReadOnlyList<StudentProfileDto>> GetStudentsAsync(
             document.TryGetValue<bool>("isLike", out var isLike) && isLike);
     }
 
-    public async Task<SavedItemsDto> GetSavedItemsAsync(string userId, CancellationToken cancellationToken)
+    public async Task<SavedItemsDto?> GetSavedItemsAsync(string userId, CancellationToken cancellationToken)
     {
-        try
-        {
-            var snapshot = await Database.Collection("users").Document(userId).GetSnapshotAsync(cancellationToken);
-            if (!snapshot.Exists) return new SavedItemsDto([], []);
+        var snapshot = await TryReadSnapshotAsync(
+            () => Database.Collection("users").Document(userId).GetSnapshotAsync(cancellationToken),
+            "saved items",
+            cancellationToken);
+        if (snapshot is null) return null;
 
-            return new SavedItemsDto(
-                ReadStringList(snapshot, "savedJobIds"),
-                ReadStringList(snapshot, "savedStudentIds")
-            );
-        }
-        catch (Exception exception) when (IsExpectedCancellation(exception, cancellationToken))
-        {
-            return new SavedItemsDto([], []);
-        }
+        if (!snapshot.Exists) return new SavedItemsDto([], []);
+
+        return new SavedItemsDto(
+            ReadStringList(snapshot, "savedJobIds"),
+            ReadStringList(snapshot, "savedStudentIds")
+        );
     }
 
-    public async Task<SavedItemsDto> SetSavedItemAsync(
+    public async Task<SavedItemsDto?> SetSavedItemAsync(
         string userId,
         string kind,
         string itemId,
@@ -410,29 +443,27 @@ public async Task<IReadOnlyList<StudentProfileDto>> GetStudentsAsync(
         return await GetSavedItemsAsync(userId, cancellationToken);
     }
 
-    public async Task<UserSettingsDto> GetUserSettingsAsync(string userId, CancellationToken cancellationToken)
+    public async Task<UserSettingsDto?> GetUserSettingsAsync(string userId, CancellationToken cancellationToken)
     {
-        try
-        {
-            var snapshot = await Database.Collection("users").Document(userId).GetSnapshotAsync(cancellationToken);
-            if (!snapshot.Exists || !snapshot.TryGetValue<Dictionary<string, object>>("settings", out var settings))
-                return new UserSettingsDto();
+        var snapshot = await TryReadSnapshotAsync(
+            () => Database.Collection("users").Document(userId).GetSnapshotAsync(cancellationToken),
+            "user settings",
+            cancellationToken);
+        if (snapshot is null) return null;
 
-            return new UserSettingsDto(
-                ReadBoolean(settings, "pushNotifications", true),
-                ReadBoolean(settings, "matchAlerts", true),
-                ReadBoolean(settings, "messageAlerts", true),
-                ReadBoolean(settings, "profileVisible", true),
-                settings.TryGetValue("language", out var language) ? language?.ToString() ?? "en" : "en"
-            );
-        }
-        catch (Exception exception) when (IsExpectedCancellation(exception, cancellationToken))
-        {
+        if (!snapshot.Exists || !snapshot.TryGetValue<Dictionary<string, object>>("settings", out var settings))
             return new UserSettingsDto();
-        }
+
+        return new UserSettingsDto(
+            ReadBoolean(settings, "pushNotifications", true),
+            ReadBoolean(settings, "matchAlerts", true),
+            ReadBoolean(settings, "messageAlerts", true),
+            ReadBoolean(settings, "profileVisible", true),
+            settings.TryGetValue("language", out var language) ? language?.ToString() ?? "en" : "en"
+        );
     }
 
-    public async Task<UserSettingsDto> SetUserSettingsAsync(
+    public async Task<UserSettingsDto?> SetUserSettingsAsync(
         string userId,
         UserSettingsDto settings,
         CancellationToken cancellationToken)
@@ -450,7 +481,11 @@ public async Task<IReadOnlyList<StudentProfileDto>> GetStudentsAsync(
             ["updatedAt"] = FieldValue.ServerTimestamp
         }, SetOptions.MergeAll, cancellationToken);
 
-        var userSnapshot = await Database.Collection("users").Document(userId).GetSnapshotAsync(cancellationToken);
+        var userSnapshot = await TryReadSnapshotAsync(
+            () => Database.Collection("users").Document(userId).GetSnapshotAsync(cancellationToken),
+            "user role",
+            cancellationToken);
+        if (userSnapshot is null) return null;
         var role = userSnapshot.Exists && userSnapshot.TryGetValue<string>("role", out var storedRole) ? storedRole : "";
         if (string.Equals(role, "STUDENT", StringComparison.OrdinalIgnoreCase))
         {
@@ -467,7 +502,11 @@ public async Task<IReadOnlyList<StudentProfileDto>> GetStudentsAsync(
                 SetOptions.MergeAll,
                 cancellationToken
             );
-            var jobs = await Database.Collection("jobs").WhereEqualTo("companyId", userId).GetSnapshotAsync(cancellationToken);
+            var jobs = await TryReadSnapshotAsync(
+                () => Database.Collection("jobs").WhereEqualTo("companyId", userId).GetSnapshotAsync(cancellationToken),
+                "company jobs",
+                cancellationToken);
+            if (jobs is null) return null;
             var batch = Database.StartBatch();
             foreach (var job in jobs.Documents)
                 batch.Update(job.Reference, "profileVisible", settings.ProfileVisible);

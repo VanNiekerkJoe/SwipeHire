@@ -56,19 +56,22 @@ public sealed class GoogleGeocodingService(
                 "GoogleMaps:ApiKey is not configured; " +
                 "geocoding cannot run.");
 
-            return null;
+            throw new GeocodingUnavailableException();
         }
 
         // 3. QUOTA CHECK
-        var allowed =
-            await usageLimitService.TryConsumeGeocodingAsync(
+        var quotaResult =
+            await usageLimitService.ConsumeGeocodingAsync(
                 userId,
                 cancellationToken);
 
-        if (!allowed)
+        if (quotaResult == GeocodingQuotaResult.LimitExceeded)
         {
             throw new GeocodingLimitExceededException();
         }
+
+        if (quotaResult == GeocodingQuotaResult.Unavailable)
+            throw new GeocodingUnavailableException();
 
         // 4. GOOGLE REQUEST
 
@@ -77,17 +80,47 @@ public sealed class GoogleGeocodingService(
             $"?address={Uri.EscapeDataString(normalizedAddress)}" +
             $"&key={Uri.EscapeDataString(apiKey)}";
 
-        using var response =
-            await httpClient.GetAsync(
-                url,
-                cancellationToken);
+        HttpResponseMessage httpResponse;
+        try
+        {
+            httpResponse = await httpClient.GetAsync(url, cancellationToken);
+        }
+        catch (HttpRequestException exception)
+        {
+            logger.LogError(exception, "Google geocoding could not be reached.");
+            throw new GeocodingUnavailableException();
+        }
+        catch (TaskCanceledException exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            logger.LogError(exception, "Google geocoding timed out.");
+            throw new GeocodingUnavailableException();
+        }
 
-        response.EnsureSuccessStatusCode();
+        using var response = httpResponse;
+
+        if (!response.IsSuccessStatusCode)
+        {
+            logger.LogError("Google geocoding returned HTTP {StatusCode}.", response.StatusCode);
+            throw new GeocodingUnavailableException();
+        }
 
         using var json =
             JsonDocument.Parse(
                 await response.Content.ReadAsStreamAsync(
                     cancellationToken));
+
+        var status = json.RootElement.TryGetProperty("status", out var statusValue)
+            ? statusValue.GetString()
+            : null;
+
+        if (status == "ZERO_RESULTS")
+            return null;
+
+        if (status != "OK")
+        {
+            logger.LogError("Google geocoding returned status {Status}.", status ?? "missing");
+            throw new GeocodingUnavailableException();
+        }
 
         var results =
             json.RootElement.GetProperty("results");
@@ -139,6 +172,11 @@ public sealed class GoogleGeocodingService(
 }
 
 public sealed class GeocodingLimitExceededException
+    : Exception
+{
+}
+
+public sealed class GeocodingUnavailableException
     : Exception
 {
 }

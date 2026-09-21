@@ -31,12 +31,20 @@ import com.swipehire.app.data.remote.StudentProfileDto
 import com.swipehire.app.data.remote.SwipeResponse
 import com.swipehire.app.data.remote.UserSettingsDto
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.security.MessageDigest
 
 class FirestoreRepository {
+    private fun swipeDocumentId(userId: String, targetId: String): String =
+        MessageDigest.getInstance("SHA-256")
+            .digest("$userId:$targetId".toByteArray(Charsets.UTF_8))
+            .take(12)
+            .joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+
     private val db: FirebaseFirestore?
         get() = try { FirebaseFirestore.getInstance() } catch (_: Exception) { null }
 
@@ -46,12 +54,14 @@ class FirestoreRepository {
             ?.filter { it.profileVisible }
             ?.map { it.toDomain() }
             ?.filter { it.companyId.isNotBlank() }.orEmpty()
-    } catch (_: Exception) { emptyList() }
+    } catch (cancelled: CancellationException) { throw cancelled }
+      catch (_: Exception) { emptyList() }
 
     suspend fun getCompanyJobs(companyId: String): List<JobPosting> = try {
         db?.collection("jobs")?.whereEqualTo("companyId", companyId)?.get()?.await()?.documents
             ?.mapNotNull { it.toObject(JobPostingDto::class.java)?.toDomain() }.orEmpty()
-    } catch (_: Exception) { emptyList() }
+    } catch (cancelled: CancellationException) { throw cancelled }
+      catch (_: Exception) { emptyList() }
 
     suspend fun getStudentProfiles(): List<StudentProfile> = try {
         db?.collection("students")?.get()?.await()?.documents
@@ -59,7 +69,8 @@ class FirestoreRepository {
             ?.mapNotNull { it.toObject(StudentProfileDto::class.java) }
             ?.filter { it.profileVisible }
             ?.map { it.toDomain() }.orEmpty()
-    } catch (_: Exception) { emptyList() }
+    } catch (cancelled: CancellationException) { throw cancelled }
+      catch (_: Exception) { emptyList() }
 
     suspend fun getStudentProfile(userId: String): StudentProfile? = try {
         db?.collection("students")?.document(userId)?.get()?.await()
@@ -481,12 +492,13 @@ class FirestoreRepository {
         db?.collection("swipes")?.whereEqualTo("userId", userId)?.get()?.await()?.documents
             ?.mapNotNull { it.getString("targetId") }
             ?.toSet().orEmpty()
-    } catch (_: Exception) { emptySet() }
+    } catch (cancelled: CancellationException) { throw cancelled }
+      catch (_: Exception) { emptySet() }
 
     suspend fun recordSwipe(userId: String, targetId: String, targetUserId: String, isLike: Boolean): SwipeResponse? {
         val firestore = db ?: return null
         return try {
-            val safeId = "${userId}_$targetId".replace('/', '_')
+            val safeId = swipeDocumentId(userId, targetId)
             firestore.collection("swipes").document(safeId).set(mapOf(
                 "userId" to userId, "targetId" to targetId, "targetUserId" to targetUserId,
                 "isLike" to isLike, "createdAt" to FieldValue.serverTimestamp()
@@ -549,7 +561,8 @@ class FirestoreRepository {
                 }
             }
             SwipeResponse(true, matchId)
-        } catch (_: Exception) { null }
+        } catch (cancelled: CancellationException) { throw cancelled }
+          catch (_: Exception) { null }
     }
 
     private suspend fun grantCvAccessForMatch(participants: List<String>, matchId: String) {

@@ -40,6 +40,7 @@ import com.swipehire.app.data.RemoteType
 import com.swipehire.app.data.currentFirebaseUserId
 import com.swipehire.app.data.remote.CreateJobPostingDto
 import com.swipehire.app.data.repository.AppRepository
+import com.swipehire.app.data.repository.GeocodingRateLimitedException
 import com.swipehire.app.ui.tr
 import kotlinx.coroutines.launch
 
@@ -127,7 +128,13 @@ fun CreateJobScreen(onBack: () -> Unit, onPublished: () -> Unit) {
                     scope.launch {
                         isSaving = true
                         message = null
-                        val coordinates = repository.geocodeAddress(address.trim())
+                        val coordinates = try {
+                            repository.geocodeAddress(address.trim())
+                        } catch (_: GeocodingRateLimitedException) {
+                            message = "Geocoding limit reached. Please try again in a minute."
+                            isSaving = false
+                            return@launch
+                        }
                         if (coordinates == null) {
                             message = "Address not found. Check the API is running and configure GoogleMaps:ApiKey for new addresses."
                             isSaving = false

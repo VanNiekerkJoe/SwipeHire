@@ -65,5 +65,11 @@ public sealed class LocationController(
                         "Please try again later."
                 });
         }
+        catch (GeocodingUnavailableException)
+        {
+            return StatusCode(
+                StatusCodes.Status503ServiceUnavailable,
+                new { message = "Geocoding is temporarily unavailable. Please try again later." });
+        }
     }
 }

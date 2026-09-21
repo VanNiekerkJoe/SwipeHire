@@ -8,9 +8,9 @@ public sealed class ApiUsageLimitService
     private readonly FirestoreDb _database;
     private readonly ILogger<ApiUsageLimitService> _logger;
 
-    private const int GeocodingDailyUserLimit = 100;
-    private const int GeocodingDailyGlobalLimit = 500;
-    private const int GeocodingMonthlyGlobalLimit = 5_000;
+    private const int GeocodingDailyUserLimit = 50;
+    private const int GeocodingDailyGlobalLimit = 100;
+    private const int GeocodingMonthlyGlobalLimit = 1000;
 
     public ApiUsageLimitService(
         IConfiguration configuration,
@@ -26,19 +26,23 @@ public sealed class ApiUsageLimitService
                 "Firebase:ProjectId must be configured.");
         }
 
-        _database = new FirestoreDbBuilder
+        var builder = new FirestoreDbBuilder
         {
             ProjectId = projectId,
             EmulatorDetection = EmulatorDetection.EmulatorOrProduction
-        }.Build();
+        };
+
+        builder.GoogleCredential = GoogleCredentialConfiguration.GetConfigured(configuration);
+
+        _database = builder.Build();
     }
 
-    public async Task<bool> TryConsumeGeocodingAsync(
+    public async Task<GeocodingQuotaResult> ConsumeGeocodingAsync(
         string userId,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(userId))
-            return false;
+            return GeocodingQuotaResult.Unavailable;
 
         var now = DateTimeOffset.UtcNow;
 
@@ -96,7 +100,7 @@ public sealed class ApiUsageLimitService
                             "User {UserId} reached the daily geocoding limit.",
                             userId);
 
-                        return false;
+                        return GeocodingQuotaResult.LimitExceeded;
                     }
 
                     // Global daily limit.
@@ -105,7 +109,7 @@ public sealed class ApiUsageLimitService
                         _logger.LogWarning(
                             "Global daily geocoding limit reached.");
 
-                        return false;
+                        return GeocodingQuotaResult.LimitExceeded;
                     }
 
                     // Global monthly limit.
@@ -114,7 +118,7 @@ public sealed class ApiUsageLimitService
                         _logger.LogWarning(
                             "Global monthly geocoding limit reached.");
 
-                        return false;
+                        return GeocodingQuotaResult.LimitExceeded;
                     }
 
                     transaction.Set(
@@ -147,8 +151,12 @@ public sealed class ApiUsageLimitService
                         },
                         SetOptions.MergeAll);
 
-                    return true;
+                    return GeocodingQuotaResult.Allowed;
                 });
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception exception)
         {
@@ -156,9 +164,7 @@ public sealed class ApiUsageLimitService
                 exception,
                 "Unable to verify geocoding usage limits.");
 
-            // Fail closed.
-            // Never call Google when the quota state cannot be verified.
-            return false;
+            return GeocodingQuotaResult.Unavailable;
         }
     }
 
@@ -171,4 +177,11 @@ public sealed class ApiUsageLimitService
             ? count
             : 0;
     }
+}
+
+public enum GeocodingQuotaResult
+{
+    Allowed,
+    LimitExceeded,
+    Unavailable
 }

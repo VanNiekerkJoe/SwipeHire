@@ -15,9 +15,18 @@ public sealed class StudentsController(FirestoreDataService database) : Controll
 {
     [HttpGet]
     [AllowAnonymous]
+    [EnableRateLimiting("public")]
     public async Task<IActionResult> GetStudents(
-        CancellationToken cancellationToken) =>
-        Ok(await database.GetStudentsAsync(cancellationToken));
+        CancellationToken cancellationToken)
+    {
+        var students = await database.GetStudentsAsync(cancellationToken);
+        if (cancellationToken.IsCancellationRequested) return new EmptyResult();
+        return students is null
+            ? Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Students temporarily unavailable",
+                detail: "The database request did not complete. Please retry.")
+            : Ok(students);
+    }
 
     [HttpPost]
     public async Task<IActionResult> CreateStudent(
@@ -39,6 +48,12 @@ public sealed class StudentsController(FirestoreDataService database) : Controll
             userId,
             dto,
             cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested) return new EmptyResult();
+        if (newId is null)
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Student profile temporarily unavailable",
+                detail: "The database request did not complete. Please retry.");
 
         return CreatedAtAction(
             nameof(GetStudents),
@@ -70,10 +85,16 @@ public sealed class StudentsController(FirestoreDataService database) : Controll
         if (!string.Equals(id, userId, StringComparison.Ordinal))
             return Forbid();
 
-        await database.UpsertStudentAsync(
+        var updatedId = await database.UpsertStudentAsync(
             userId,
             dto,
             cancellationToken);
+
+        if (cancellationToken.IsCancellationRequested) return new EmptyResult();
+        if (updatedId is null)
+            return Problem(statusCode: StatusCodes.Status503ServiceUnavailable,
+                title: "Student profile temporarily unavailable",
+                detail: "The database request did not complete. Please retry.");
 
         return Ok(
             new ProfileResponseDto
