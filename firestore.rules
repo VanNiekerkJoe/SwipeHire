@@ -1,0 +1,105 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isCurrentUser(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isMatchParticipant(matchId) {
+      return signedIn() &&
+        request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.participantIds &&
+        get(/databases/$(database)/documents/matches/$(matchId)).data.mutual == true;
+    }
+
+    match /users/{userId} {
+      allow read, create, update, delete: if isCurrentUser(userId);
+    }
+
+    match /students/{userId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isCurrentUser(userId) &&
+        request.resource.data.userId == request.auth.uid;
+    }
+
+    match /companies/{userId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isCurrentUser(userId) &&
+        request.resource.data.userId == request.auth.uid;
+    }
+
+    match /jobs/{jobId} {
+      allow read: if signedIn() && resource.data.companyId is string;
+      allow create: if signedIn() && request.resource.data.companyId == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.companyId == request.auth.uid;
+    }
+
+    match /swipes/{swipeId} {
+      allow read: if signedIn() &&
+        (resource.data.userId == request.auth.uid || resource.data.targetUserId == request.auth.uid);
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create, update: if signedIn() &&
+        request.resource.data.userId == request.auth.uid;
+    }
+
+    match /swipePairs/{pairId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participantIds;
+      allow create, update: if signedIn() &&
+        request.auth.uid in request.resource.data.participantIds;
+      allow delete: if false;
+    }
+
+    match /matches/{matchId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participantIds;
+      allow create: if signedIn() && request.auth.uid in request.resource.data.participantIds &&
+        request.resource.data.mutual == true;
+      allow update: if signedIn() && request.auth.uid in resource.data.participantIds &&
+        resource.data.mutual == true;
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if isMatchParticipant(matchId);
+        allow create: if isMatchParticipant(matchId) &&
+          request.resource.data.senderId == request.auth.uid;
+        allow update: if isMatchParticipant(matchId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) &&
+          request.resource.data.readBy.hasAll(resource.data.readBy) &&
+          request.auth.uid in request.resource.data.readBy;
+        allow delete: if false;
+      }
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() &&
+        request.resource.data.userId is string &&
+        request.resource.data.actorId is string &&
+        request.resource.data.matchId is string &&
+        request.resource.data.userId in
+          get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.participantIds &&
+        request.resource.data.actorId in
+          get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.participantIds &&
+        get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.mutual == true;
+    }
+
+    match /cvAccess/{studentId}/companies/{companyId} {
+      allow read: if signedIn() &&
+        (request.auth.uid == studentId || request.auth.uid == companyId);
+      allow create: if signedIn() &&
+        request.auth.uid in [studentId, companyId] &&
+        request.resource.data.studentId == studentId &&
+        request.resource.data.companyId == companyId &&
+        get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.mutual == true &&
+        studentId in get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.participantIds &&
+        companyId in get(/databases/$(database)/documents/matches/$(request.resource.data.matchId)).data.participantIds;
+      allow update, delete: if false;
+    }
+  }
+}

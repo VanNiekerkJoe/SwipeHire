@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.swipehire.app.ui.theme.Coral
 import com.swipehire.app.ui.theme.Mint40
+import com.swipehire.app.ui.tr
 import kotlinx.coroutines.launch
 
 enum class SwipeDirection { LEFT, RIGHT }
@@ -60,27 +62,32 @@ fun <T> SwipeCardStack(
             val yOffset = stackIndex * 16f
             val tilt = if (stackIndex % 2 == 0) stackIndex * 1.6f else -stackIndex * 1.6f
 
-            if (isTop) {
-                DraggableTopCard(
-                    pendingSwipe = pendingSwipe,
-                    onPendingSwipeHandled = onPendingSwipeHandled,
-                    onSwiped = { direction -> onSwiped(item, direction) }
-                ) {
-                    cardContent(item)
-                }
-            } else {
-                Box(
-                    Modifier
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                            translationY = yOffset
-                            rotationZ = tilt
-                            alpha = 1f - (stackIndex * 0.22f)
-                        }
-                        .clip(RoundedCornerShape(28.dp))
-                ) {
-                    cardContent(item)
+            // Keep animation state attached to the actual job/student. Without
+            // this key, the next top card inherits the dismissed card's final
+            // off-screen offset and only the translucent cards behind it remain.
+            key(item) {
+                if (isTop) {
+                    DraggableTopCard(
+                        pendingSwipe = pendingSwipe,
+                        onPendingSwipeHandled = onPendingSwipeHandled,
+                        onSwiped = { direction -> onSwiped(item, direction) }
+                    ) {
+                        cardContent(item)
+                    }
+                } else {
+                    Box(
+                        Modifier
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                                translationY = yOffset
+                                rotationZ = tilt
+                                alpha = 1f - (stackIndex * 0.22f)
+                            }
+                            .clip(RoundedCornerShape(28.dp))
+                    ) {
+                        cardContent(item)
+                    }
                 }
             }
         }
@@ -112,8 +119,10 @@ private fun DraggableTopCard(
             SwipeDirection.RIGHT -> offsetX.animateTo(1600f, tween(300))
             SwipeDirection.LEFT -> offsetX.animateTo(-1600f, tween(300))
         }
-        onSwiped(pendingSwipe)
+        // Clear the one-shot command before changing the deck so the new top
+        // card can never consume the previous card's swipe request.
         onPendingSwipeHandled()
+        onSwiped(pendingSwipe)
     }
 
     Box(
@@ -180,7 +189,7 @@ private fun DraggableTopCard(
                 }
                 .border(2.dp, Mint40, RoundedCornerShape(10.dp))
         ) {
-            SwipeStampText("MATCH", Mint40)
+            SwipeStampText(tr("MATCH"), Mint40)
         }
         Box(
             Modifier
@@ -192,7 +201,7 @@ private fun DraggableTopCard(
                 }
                 .border(2.dp, Coral, RoundedCornerShape(10.dp))
         ) {
-            SwipeStampText("PASS", Coral)
+            SwipeStampText(tr("PASS"), Coral)
         }
     }
 }

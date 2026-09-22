@@ -1,6 +1,5 @@
 package com.swipehire.app.ui.screens
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,9 +18,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.School
@@ -29,70 +29,87 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
+import com.swipehire.app.data.signOutFirebaseUser
 import com.swipehire.app.data.AccountType
+import com.swipehire.app.data.AppLanguage
+import com.swipehire.app.ui.tr
 import com.swipehire.app.ui.theme.Coral
 import com.swipehire.app.ui.theme.Mint40
 import com.swipehire.app.ui.theme.ThemeMode
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.viewmodel.SettingsViewModel
+import kotlinx.coroutines.launch
 
 /**
  * The Settings screen — this is the "Application State" deliverable: every control here
- * reads from and writes to DataStore via [SettingsViewModel], so changes survive process death.
+ * uses Firestore for account preferences and DataStore only for device-local appearance/security state.
  */
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(),
+    onBack: () -> Unit,
     onLoggedOut: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-        Text(
-            "Settings",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(20.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back to profile"
+                )
+            }
+            Text(
+                tr("Settings"),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
 
-        // Account type (student ↔ company) has its own prominent switcher on the
-        // Profile tab now — it's an identity change, not a notification-style
-        // preference, so it doesn't belong buried in this list.
         AccountTypeNote(current = state.accountType)
 
-        SettingsSection(title = "Notifications", icon = Icons.Filled.NotificationsActive) {
+        SettingsSection(title = tr("Notifications"), icon = Icons.Filled.NotificationsActive) {
             SwitchRow(
-                label = "Push notifications",
+                label = tr("Push notifications"),
                 subtitle = "Master switch for all SwipeHire alerts",
                 checked = state.pushNotifications,
                 onCheckedChange = { viewModel.setPushNotifications(it) }
             )
             SwitchRow(
-                label = "New match alerts",
+                label = tr("New match alerts"),
                 subtitle = "Get notified the moment there's a mutual match",
                 checked = state.matchAlerts,
                 enabled = state.pushNotifications,
                 onCheckedChange = { viewModel.setMatchAlerts(it) }
             )
             SwitchRow(
-                label = "Message alerts",
+                label = tr("Message alerts"),
                 subtitle = "Get notified about new chat messages",
                 checked = state.messageAlerts,
                 enabled = state.pushNotifications,
@@ -100,9 +117,9 @@ fun SettingsScreen(
             )
         }
 
-        SettingsSection(title = "Privacy", icon = Icons.Filled.Visibility) {
+        SettingsSection(title = tr("Privacy"), icon = Icons.Filled.Visibility) {
             SwitchRow(
-                label = "Profile visibility",
+                label = tr("Profile visibility"),
                 subtitle = if (state.accountType == AccountType.STUDENT)
                     "Let companies discover your profile while swiping" else
                     "Let students discover your job postings while swiping",
@@ -111,15 +128,21 @@ fun SettingsScreen(
             )
         }
 
-        SettingsSection(title = "Appearance", icon = Icons.Filled.Palette) {
-            ThemeOptionRow("Light", ThemeMode.LIGHT, state.themeMode) { viewModel.setThemeMode(it) }
-            ThemeOptionRow("Dark", ThemeMode.DARK, state.themeMode) { viewModel.setThemeMode(it) }
-            ThemeOptionRow("Match system", ThemeMode.SYSTEM, state.themeMode) { viewModel.setThemeMode(it) }
+        SettingsSection(title = tr("Appearance"), icon = Icons.Filled.Palette) {
+            ThemeOptionRow(tr("Light"), ThemeMode.LIGHT, state.themeMode) { viewModel.setThemeMode(it) }
+            ThemeOptionRow(tr("Dark"), ThemeMode.DARK, state.themeMode) { viewModel.setThemeMode(it) }
+            ThemeOptionRow(tr("Match system"), ThemeMode.SYSTEM, state.themeMode) { viewModel.setThemeMode(it) }
         }
 
-        SettingsSection(title = "Security", icon = Icons.Filled.Fingerprint) {
+        SettingsSection(title = tr("Language")) {
+            AppLanguage.entries.forEach { language ->
+                LanguageOptionRow(language, state.language) { viewModel.setLanguage(it) }
+            }
+        }
+
+        SettingsSection(title = tr("Security"), icon = Icons.Filled.Fingerprint) {
             SwitchRow(
-                label = "Biometric lock",
+                label = tr("Biometric lock"),
                 subtitle = "Require fingerprint or face unlock to open SwipeHire",
                 checked = state.biometricLock,
                 onCheckedChange = { viewModel.setBiometricLock(it) }
@@ -128,13 +151,33 @@ fun SettingsScreen(
 
         Spacer(Modifier.height(8.dp))
         TextButton(
-            onClick = onLoggedOut,
+            onClick = {
+                scope.launch {
+                    signOutFirebaseUser(context)
+                    onLoggedOut()
+                }
+            },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
         ) {
-            Icon(Icons.Filled.Logout, contentDescription = null, tint = Coral)
+            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = Coral)
             Spacer(Modifier.width(8.dp))
-            Text("Log out", color = Coral, fontWeight = FontWeight.Bold)
+            Text(tr("Log out"), color = Coral, fontWeight = FontWeight.Bold)
         }
+    }
+}
+
+@Composable
+private fun LanguageOptionRow(language: AppLanguage, current: AppLanguage, onSelect: (AppLanguage) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable { onSelect(language) }.padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = language == current,
+            onClick = { onSelect(language) },
+            colors = RadioButtonDefaults.colors(selectedColor = Violet40)
+        )
+        Text(language.displayName, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -224,10 +267,9 @@ private fun AccountTypeNote(current: AccountType) {
             )
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text("Browsing as ${if (current == AccountType.STUDENT) "Student" else "Company"}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-                Text("Switch this from the Profile tab", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${tr("Browsing as")} ${if (current == AccountType.STUDENT) tr("Student") else tr("Company")}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                Text(tr("Log out to use a different account or role"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
-

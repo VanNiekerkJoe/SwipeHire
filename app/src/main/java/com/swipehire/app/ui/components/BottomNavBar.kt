@@ -24,7 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,21 +39,23 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.swipehire.app.ui.theme.Coral
+import com.swipehire.app.ui.tr
 import com.swipehire.app.ui.theme.Mint40
 import com.swipehire.app.ui.theme.Violet40
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 enum class SwipeHireTab(val route: String, val label: String) {
     DISCOVER("discover", "Discover"),
     MATCHES("matches", "Matches"),
+    ALERTS("alerts", "Alerts"),
     PROFILE("profile", "Profile"),
-    SETTINGS("settings", "Settings"),
 }
 
 private fun iconFor(tab: SwipeHireTab): ImageVector = when (tab) {
     SwipeHireTab.DISCOVER -> Icons.Filled.Style
     SwipeHireTab.MATCHES -> Icons.Filled.ChatBubble
+    SwipeHireTab.ALERTS -> Icons.Filled.Notifications
     SwipeHireTab.PROFILE -> Icons.Filled.Person
-    SwipeHireTab.SETTINGS -> Icons.Filled.Settings
 }
 
 /**
@@ -65,6 +67,7 @@ private fun iconFor(tab: SwipeHireTab): ImageVector = when (tab) {
 fun SwipeHireBottomBar(
     currentTab: SwipeHireTab,
     hasUnreadMatches: Boolean,
+    hasUnreadAlerts: Boolean,
     onTabSelected: (SwipeHireTab) -> Unit
 ) {
     val tabs = SwipeHireTab.values()
@@ -72,8 +75,11 @@ fun SwipeHireBottomBar(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 22.dp, vertical = 16.dp)
+            .navigationBarsPadding()
+            .padding(horizontal = 22.dp)
+            .padding(top = 8.dp, bottom = 16.dp)
             .height(66.dp),
+
         shape = RoundedCornerShape(30.dp),
         color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
         shadowElevation = 20.dp,
@@ -118,8 +124,9 @@ fun SwipeHireBottomBar(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Box {
-                                Icon(iconFor(tab), contentDescription = tab.label, tint = tint, modifier = Modifier.size(22.dp))
-                                if (tab == SwipeHireTab.MATCHES && hasUnreadMatches) {
+                                Icon(iconFor(tab), contentDescription = tr(tab.label), tint = tint, modifier = Modifier.size(22.dp))
+                                if ((tab == SwipeHireTab.MATCHES && hasUnreadMatches) ||
+                                    (tab == SwipeHireTab.ALERTS && hasUnreadAlerts)) {
                                     Box(
                                         Modifier
                                             .size(7.dp)
@@ -132,7 +139,7 @@ fun SwipeHireBottomBar(
                             }
                             if (selected) {
                                 Text(
-                                    tab.label,
+                                    tr(tab.label),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = tint,

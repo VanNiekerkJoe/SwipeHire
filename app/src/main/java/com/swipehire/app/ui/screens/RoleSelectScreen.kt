@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,6 +38,7 @@ import com.swipehire.app.ui.theme.Mint20
 import com.swipehire.app.ui.theme.Mint40
 import com.swipehire.app.ui.theme.Violet20
 import com.swipehire.app.ui.theme.Violet40
+import com.swipehire.app.ui.tr
 import com.swipehire.app.ui.theme.glow
 
 @Composable
@@ -46,18 +47,18 @@ fun RoleSelectScreen(onRoleChosen: (AccountType) -> Unit) {
         Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Who's\nswiping today?", style = MaterialTheme.typography.headlineMedium)
+        Text(tr("Who's\nswiping today?"), style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(8.dp))
         Text(
-            "You can switch this anytime from Settings.",
+            "This role is tied to your signed-in account. Log out to use another account.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(32.dp))
 
         RoleCard(
-            title = "I'm a Student",
-            subtitle = "Discover roles from companies that swipe on you",
+            title = tr("I'm a Student"),
+            subtitle = tr("Discover roles from companies that swipe on you"),
             icon = Icons.Filled.School,
             gradient = Brush.linearGradient(listOf(Violet40, Violet20)),
             accent = Violet40,
@@ -65,8 +66,8 @@ fun RoleSelectScreen(onRoleChosen: (AccountType) -> Unit) {
         )
         Spacer(Modifier.height(16.dp))
         RoleCard(
-            title = "I'm Hiring",
-            subtitle = "Swipe through student profiles to find your next grad",
+            title = tr("I'm Hiring"),
+            subtitle = tr("Swipe through student profiles to find your next grad"),
             icon = Icons.Filled.Business,
             gradient = Brush.linearGradient(listOf(Mint40, Mint20)),
             accent = Mint40,

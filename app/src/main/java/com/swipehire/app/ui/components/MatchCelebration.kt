@@ -42,6 +42,7 @@ import com.swipehire.app.ui.theme.Sky
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.auroraMesh
 import com.swipehire.app.ui.theme.glow
+import com.swipehire.app.ui.tr
 
 /**
  * Full-screen "It's a Match!" moment — the payoff a swipe-to-decide flow
@@ -88,7 +89,7 @@ fun MatchCelebrationOverlay(
                     Spacer(Modifier.height(24.dp))
                     Icon(Icons.Filled.Bolt, contentDescription = null, tint = Mint40, modifier = Modifier.size(28.dp))
                     Spacer(Modifier.height(4.dp))
-                    Text("It's a Match!", color = Color.White, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+                    Text(tr("It's a Match!"), color = Color.White, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(10.dp))
                     Text(name, color = Color.White, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
                     Text(subtitle, color = Mint40, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center)
@@ -112,7 +113,7 @@ fun MatchCelebrationOverlay(
                     ) {
                         Icon(Icons.Filled.Chat, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text("Send a message", fontWeight = FontWeight.Bold)
+                        Text(tr("Send a message"), fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(12.dp))
                     OutlinedButton(
@@ -121,7 +122,7 @@ fun MatchCelebrationOverlay(
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                     ) {
-                        Text("Keep swiping", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text(tr("Keep swiping"), color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }

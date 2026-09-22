@@ -2,7 +2,6 @@ package com.swipehire.app.ui.screens
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,29 +24,57 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import com.swipehire.app.data.MockData
+import com.swipehire.app.data.AccountType
+import com.swipehire.app.data.currentFirebaseUserId
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.glow
+import com.swipehire.app.ui.tr
+import com.swipehire.app.viewmodel.DiscoverViewModel
 
 @Composable
-fun JobLocationScreen(jobId: String, onBack: () -> Unit) {
-    val job = MockData.jobPostings.find { it.id == jobId } ?: return
+fun JobLocationScreen(
+    jobId: String,
+    onBack: () -> Unit,
+    viewModel: DiscoverViewModel = viewModel()
+) {
+    val jobStack by viewModel.jobStack.collectAsState()
+    val currentUserId = currentFirebaseUserId()
+
+    LaunchedEffect(currentUserId) {
+        if (currentUserId != null) viewModel.loadCards(AccountType.STUDENT, currentUserId)
+    }
+
+    val job = jobStack.find { it.id == jobId }
+    if (job == null) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(tr("Loading job location…"))
+        }
+        return
+    }
     val context = LocalContext.current
     val jobLatLng = LatLng(job.latitude, job.longitude)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(jobLatLng, 14f)
+    }
+
+    LaunchedEffect(jobLatLng) {
+        cameraPositionState.position = CameraPosition.fromLatLngZoom(jobLatLng, 14f)
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -109,7 +136,7 @@ fun JobLocationScreen(jobId: String, onBack: () -> Unit) {
             ) {
                 Icon(Icons.Filled.Directions, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
-                Text("Get directions", fontWeight = FontWeight.Bold)
+                Text(tr("Get directions"), fontWeight = FontWeight.Bold)
             }
         }
     }

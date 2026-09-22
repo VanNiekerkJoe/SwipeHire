@@ -45,4 +45,5 @@ class NearbyJobsViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
     }
+
 }
