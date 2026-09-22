@@ -44,10 +44,10 @@ jobs:
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Restore API
-        run: dotnet restore ./SwipeHire.Api/SwipeHire.Api.csproj
+        run: dotnet restore SwipeHire.Api/SwipeHire.Api/SwipeHire.Api.csproj --configfile NuGet.Config
 
       - name: Build API
-        run: dotnet build ./SwipeHire.Api/SwipeHire.Api.csproj --no-restore --configuration Release
+        run: dotnet build SwipeHire.Api/SwipeHire.Api/SwipeHire.Api.csproj --no-restore --configuration Release
