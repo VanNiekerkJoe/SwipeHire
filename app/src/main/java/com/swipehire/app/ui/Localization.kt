@@ -9,9 +9,9 @@ val LocalAppLanguage = staticCompositionLocalOf { AppLanguage.ENGLISH }
 @Composable
 fun tr(english: String): String = when (LocalAppLanguage.current) {
     AppLanguage.ENGLISH -> english
-    AppLanguage.ISIZULU -> isiZulu[english] ?: english
-    AppLanguage.AFRIKAANS -> afrikaans[english] ?: english
-    AppLanguage.SESOTHO -> sesotho[english] ?: english
+    AppLanguage.ISIZULU -> isiZulu[english] ?: pipelineZu[english] ?: english
+    AppLanguage.AFRIKAANS -> afrikaans[english] ?: pipelineAf[english] ?: english
+    AppLanguage.SESOTHO -> sesotho[english] ?: pipelineSt[english] ?: english
 }
 
 private val isiZulu = mapOf(

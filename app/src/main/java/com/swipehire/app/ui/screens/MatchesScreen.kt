@@ -33,6 +33,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.swipehire.app.data.MatchChat
+import com.swipehire.app.data.PipelineStage
+import com.swipehire.app.ui.components.StageChip
 import com.swipehire.app.ui.theme.Mint40
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.glow
@@ -91,6 +93,10 @@ private fun MatchRow(match: MatchChat, onClick: () -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text(match.name, style = MaterialTheme.typography.titleMedium)
                 Text(match.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (match.stage != PipelineStage.MATCHED) {
+                    Spacer(Modifier.height(4.dp))
+                    StageChip(match.stage)
+                }
                 Spacer(Modifier.height(2.dp))
                 Text(
                     match.lastMessage,

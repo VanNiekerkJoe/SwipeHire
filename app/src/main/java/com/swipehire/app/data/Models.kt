@@ -82,10 +82,12 @@ data class MatchChat(
     val unread: Boolean,
     val otherUserId: String = "",
     val studentCvPath: String = "",
-    val studentCvFileName: String = ""
+    val studentCvFileName: String = "",
+    /** Hiring pipeline stage, stored on the match document (see Pipeline.kt). */
+    val stage: PipelineStage = PipelineStage.MATCHED
 )
 
-enum class AlertType { MATCH, MESSAGE }
+enum class AlertType { MATCH, MESSAGE, INTERVIEW, STAGE }
 
 data class AppAlert(
     val id: String,

@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -58,6 +59,8 @@ fun AlertsScreen(
         when (alert.type) {
             AlertType.MATCH -> matchAlertsEnabled
             AlertType.MESSAGE -> messageAlertsEnabled
+            // Interview and pipeline updates follow the "match alerts" switch.
+            AlertType.INTERVIEW, AlertType.STAGE -> matchAlertsEnabled
         }
     }
 
@@ -79,7 +82,7 @@ fun AlertsScreen(
                 items(visibleAlerts, key = { it.id }) { alert ->
                     AlertCard(alert) {
                         viewModel.markRead(alert.id)
-                        if (alert.type == AlertType.MESSAGE && alert.matchId.isNotBlank()) {
+                        if (alert.type != AlertType.MATCH && alert.matchId.isNotBlank()) {
                             onOpenChat(alert.matchId)
                         } else {
                             onOpenMatches()
@@ -95,12 +98,15 @@ fun AlertsScreen(
 private fun AlertCard(alert: AppAlert, onClick: () -> Unit) {
     val displayTitle = when {
         alert.type == AlertType.MATCH -> tr("New match")
+        alert.type == AlertType.INTERVIEW || alert.type == AlertType.STAGE -> tr(alert.title)
         alert.title.startsWith("New message from ") ->
             "${tr("New message from")} ${alert.title.removePrefix("New message from ")}"
         else -> alert.title
     }
     val displayBody = if (alert.type == AlertType.MATCH && alert.body.startsWith("You matched with ")) {
         "${tr("You matched with")} ${alert.body.removePrefix("You matched with ")}"
+    } else if (alert.type == AlertType.STAGE) {
+        "${tr("Now at stage")}: ${tr(alert.body)}"
     } else alert.body
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
@@ -116,7 +122,11 @@ private fun AlertCard(alert: AppAlert, onClick: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    if (alert.type == AlertType.MATCH) Icons.Filled.Favorite else Icons.Filled.ChatBubble,
+                    when (alert.type) {
+                        AlertType.MATCH -> Icons.Filled.Favorite
+                        AlertType.INTERVIEW, AlertType.STAGE -> Icons.Filled.Event
+                        else -> Icons.Filled.ChatBubble
+                    },
                     contentDescription = null,
                     tint = if (alert.type == AlertType.MATCH) Coral else Violet40
                 )

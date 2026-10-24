@@ -95,7 +95,8 @@ data class MatchDto(
     val participantIds: List<String> = emptyList(),
     val targetId: String = "",
     val lastMessage: String = "",
-    val unreadBy: List<String> = emptyList()
+    val unreadBy: List<String> = emptyList(),
+    val stage: String = "MATCHED"
 )
 
 // Firestore message document for subcollection

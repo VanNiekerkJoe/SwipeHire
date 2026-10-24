@@ -15,6 +15,7 @@ import com.swipehire.app.data.ChatMessage
 import com.swipehire.app.data.CompanyProfile
 import com.swipehire.app.data.JobPosting
 import com.swipehire.app.data.MatchChat
+import com.swipehire.app.data.PipelineStage
 import com.swipehire.app.data.MessageDeliveryState
 import com.swipehire.app.data.StudentProfile
 import com.swipehire.app.data.remote.ChatMessageDto
@@ -146,7 +147,8 @@ class FirestoreRepository {
             unread = userId in dto.unreadBy,
             otherUserId = otherId,
             studentCvPath = student?.cvPath.orEmpty(),
-            studentCvFileName = student?.cvFileName.orEmpty()
+            studentCvFileName = student?.cvFileName.orEmpty(),
+            stage = PipelineStage.fromName(dto.stage)
         )
     }
 

@@ -91,8 +91,8 @@ fun SwipeHireApp(settingsViewModel: SettingsViewModel = viewModel()) {
                     hasUnreadMatches = matches.any { it.unread },
                     hasUnreadAlerts = alerts.any { alert ->
                         !alert.isRead && settingsState.pushNotifications &&
-                            ((alert.type == com.swipehire.app.data.AlertType.MATCH && settingsState.matchAlerts) ||
-                                (alert.type == com.swipehire.app.data.AlertType.MESSAGE && settingsState.messageAlerts))
+                                ((alert.type == com.swipehire.app.data.AlertType.MESSAGE && settingsState.messageAlerts) ||
+                                        (alert.type != com.swipehire.app.data.AlertType.MESSAGE && settingsState.matchAlerts))
                     },
                     onTabSelected = { tab ->
                         navigateToMainTab(tab.route)

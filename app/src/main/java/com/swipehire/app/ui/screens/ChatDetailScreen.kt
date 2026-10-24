@@ -51,17 +51,20 @@ import com.swipehire.app.data.ChatMessage
 import com.swipehire.app.data.MessageDeliveryState
 import com.swipehire.app.data.currentFirebaseUserId
 import com.swipehire.app.data.repository.AppRepository
+import com.swipehire.app.ui.components.PipelinePanel
 import com.swipehire.app.ui.theme.Violet40
 import com.swipehire.app.ui.theme.glow
 import com.swipehire.app.ui.tr
 import com.swipehire.app.viewmodel.ChatViewModel
+import com.swipehire.app.viewmodel.PipelineViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun ChatDetailScreen(
     matchId: String,
     onBack: () -> Unit,
-    viewModel: ChatViewModel = viewModel()
+    viewModel: ChatViewModel = viewModel(),
+    pipelineViewModel: PipelineViewModel = viewModel()
 ) {
     val currentUserId = currentFirebaseUserId()
     val context = LocalContext.current
@@ -138,6 +141,14 @@ fun ChatDetailScreen(
                 }
             }
         }
+
+        // Interview scheduler + hiring pipeline (user-defined features 4 and 5)
+        PipelinePanel(
+            matchId = matchId,
+            currentUserId = currentUserId,
+            otherName = match?.name.orEmpty(),
+            viewModel = pipelineViewModel
+        )
 
         LazyColumn(
             Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
